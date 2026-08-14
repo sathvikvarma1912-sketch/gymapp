@@ -38,15 +38,27 @@ create table if not exists public.workout_overviews (
   duration_ms bigint not null default 0 check (duration_ms >= 0),
   exercise_count integer not null default 0 check (exercise_count >= 0),
   total_sets integer not null default 0 check (total_sets >= 0),
+  total_volume numeric not null default 0 check (total_volume >= 0),
+  workout_date date not null,
   units text not null default 'kg' check (units in ('kg','lbs')),
   created_at timestamptz not null default now()
 );
+alter table public.workout_overviews add column if not exists total_volume numeric not null default 0 check (total_volume >= 0);
+alter table public.workout_overviews add column if not exists workout_date date;
+update public.workout_overviews set workout_date=(started_at at time zone 'UTC')::date where workout_date is null;
+alter table public.workout_overviews alter column workout_date set not null;
 create index if not exists workout_overviews_user_started on public.workout_overviews (user_id, started_at desc);
 
 alter table public.profiles enable row level security;
 alter table public.user_states enable row level security;
 alter table public.friendships enable row level security;
 alter table public.workout_overviews enable row level security;
+
+grant select, insert, update on table public.profiles to authenticated;
+grant select, insert, update on table public.user_states to authenticated;
+grant select, insert, update, delete on table public.friendships to authenticated;
+grant select, insert, update, delete on table public.workout_overviews to authenticated;
+grant usage, select on sequence public.friendships_id_seq to authenticated;
 
 drop policy if exists "authenticated profiles are discoverable" on public.profiles;
 drop policy if exists "users see connected profiles" on public.profiles;
@@ -113,6 +125,33 @@ create policy "owners update overviews" on public.workout_overviews
 drop policy if exists "owners delete overviews" on public.workout_overviews;
 create policy "owners delete overviews" on public.workout_overviews
   for delete to authenticated using ((select auth.uid()) = user_id);
+
+create or replace function public.friend_leaderboard(range_start timestamptz default null)
+returns table (
+  user_id uuid,
+  workout_days bigint,
+  workout_count bigint,
+  total_sets bigint,
+  total_volume_kg numeric
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select
+    o.user_id,
+    count(distinct o.workout_date) as workout_days,
+    count(*) as workout_count,
+    sum(o.total_sets)::bigint as total_sets,
+    round(sum(case when o.units = 'lbs' then o.total_volume * 0.45359237 else o.total_volume end), 2) as total_volume_kg
+  from public.workout_overviews o
+  where range_start is null or o.started_at >= range_start
+  group by o.user_id;
+$$;
+revoke all on function public.friend_leaderboard(timestamptz) from public;
+revoke all on function public.friend_leaderboard(timestamptz) from anon;
+grant execute on function public.friend_leaderboard(timestamptz) to authenticated;
 
 create or replace function public.find_profile_by_friend_code(search_code text)
 returns table (id uuid, display_name text)

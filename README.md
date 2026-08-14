@@ -29,6 +29,6 @@ It launches full-screen like a native app.
 
 ## Notes
 - Data is saved on-device first (IndexedDB), so workouts still work offline. After email sign-in, private data is also synced to Supabase.
-- Friends can only see workout name, date, duration, exercise count, and set count. Exercise names, weights, and reps remain private.
+- Friends can see workout overviews and aggregate volume for weekly, monthly, and all-time rankings. Exercise names, individual weights, and reps remain private.
 - Use Profile → Back up data for a portable JSON export.
 - After finishing a workout, tap **Copy for Google Health** to grab the summary (exercises, sets, weights, start/end time, duration) and paste it into Google Health.

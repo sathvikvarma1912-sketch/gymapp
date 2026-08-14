@@ -73,6 +73,9 @@ input,select,textarea{font:inherit;color:inherit}
 .tpl .dot{width:44px;height:44px;border-radius:16px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:19px}
 .tpl h3{font-size:16px}
 .tpl .go{width:38px;height:38px;border-radius:50%;background:var(--lime);color:#0B0E09;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex:none}
+.tpl-ex-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpl-ex-actions{display:flex;gap:4px;flex:none}
+.tpl-ex-actions .chip{padding:6px 9px}
 
 /* active workout sheet */
 #sheet{position:fixed;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,.25,1)}
@@ -603,20 +606,27 @@ window.editTpl=id=>{
   const t=S.templates.find(x=>x.id===id);
   modal(`<div class="row"><h2 style="font-size:20px">Edit template</h2>
       <button class="chip" onclick="delTpl('${t.id}')" style="color:var(--danger)">Delete</button></div>
-    <input class="txt" id="tplName" value="${t.name}">
+    <input class="txt" id="tplName">
     <div id="tplExs" style="margin-top:12px">${t.exercises.map((e,i)=>`
       <div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-        <span>${e.name} <span class="muted">×${e.sets||2}</span></span>
-        <span><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
+        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">×${e.sets||2}</span></div>
+        <div class="tpl-ex-actions"><button class="chip" onclick="editTplExName('${t.id}',${i})" aria-label="Edit ${esc(e.name)} name">✎</button><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
         <button class="chip" onclick="mvEx('${t.id}',${i},1)">↓</button>
-        <button class="chip" onclick="rmTplEx('${t.id}',${i})">✕</button></span></div>`).join('')}</div>
+        <button class="chip" onclick="rmTplEx('${t.id}',${i})">✕</button></div></div>`).join('')}</div>
     <input class="txt" id="tplNewEx" placeholder="Add exercise…">
     <button class="btn ghost sm" style="margin-top:10px" onclick="addTplEx('${t.id}')">+ Add</button>
     <button class="btn" style="margin-top:14px" onclick="saveTpl('${t.id}')">Save</button>`);
+  $('#tplName').value=t.name;
 };
 window.mvEx=(id,i,d)=>{const t=S.templates.find(x=>x.id===id);const j=i+d;if(j<0||j>=t.exercises.length)return;
   [t.exercises[i],t.exercises[j]]=[t.exercises[j],t.exercises[i]];save();editTpl(id)};
 window.rmTplEx=(id,i)=>{const t=S.templates.find(x=>x.id===id);t.exercises.splice(i,1);save();editTpl(id)};
+window.editTplExName=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i];if(!exercise)return;
+  modal(`<h2 style="font-size:20px">Edit template exercise</h2><div class="muted" style="margin-top:4px">This updates every new workout started from this template.</div>
+    <input class="txt" id="tplExerciseName" maxlength="80" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExName('${id}',${i})}">
+    <button class="btn" style="margin-top:14px" onclick="saveTplExName('${id}',${i})">Save exercise name</button>`);
+  const input=$('#tplExerciseName');input.value=exercise.name;input.focus();input.select()};
+window.saveTplExName=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');exercise.name=name;save();editTpl(id);toast('Template exercise renamed')};
 window.addTplEx=id=>{const t=S.templates.find(x=>x.id===id);const n=$('#tplNewEx').value.trim();if(!n)return;
   t.exercises.push(seedEx(n));save();editTpl(id)};
 window.saveTpl=id=>{const t=S.templates.find(x=>x.id===id);t.name=$('#tplName').value.trim()||t.name;save();closeModal();renderAll()};

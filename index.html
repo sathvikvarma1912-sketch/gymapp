@@ -59,10 +59,14 @@ input,select,textarea{font:inherit;color:inherit}
 
 /* week strip */
 #week{display:flex;justify-content:space-between;margin:18px 2px 20px}
-.day{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-weight:600}
-.day .ring{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);font-weight:700;transition:all .2s}
+.day{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px;color:var(--muted);font-weight:600;padding:2px;border-radius:18px;touch-action:manipulation}
+.day:active{transform:scale(.94)}
+.day .ring{position:relative;width:38px;height:38px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);font-weight:700;transition:all .2s}
 .day.done .ring{border-color:var(--lime);background:rgba(205,251,71,.12);color:var(--lime)}
+.day.done .ring::after{content:"✓";position:absolute;right:-4px;top:-5px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--lime);color:var(--bg);font-size:10px;font-weight:900;box-shadow:0 0 0 2px var(--bg)}
 .day.today .ring{box-shadow:0 0 0 3px rgba(205,251,71,.25)}
+.date-link{display:flex;align-items:center;gap:6px;color:var(--muted);touch-action:manipulation}
+.date-link::after{content:"›";color:var(--lime);font-size:16px;line-height:1}
 
 /* template cards */
 .tpl{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -132,7 +136,11 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 
 .hist .vol{color:var(--lime);font-weight:700}
 .hist-date{font-size:13px;color:var(--lime);margin:18px 2px 8px;font-weight:700;letter-spacing:.04em}
-#histDate{color-scheme:dark;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:9px 10px;outline:none;min-width:145px}
+.hist-tools{display:flex;align-items:center;gap:7px}
+.hist-picker{position:relative;display:flex;align-items:center;justify-content:center;min-width:104px;height:38px;padding:0 13px;background:var(--card2);border:1px solid var(--line);border-radius:14px;color:var(--text);font-size:12px;font-weight:700;overflow:hidden}
+.hist-picker::before{content:"▦";color:var(--lime);font-size:14px;margin-right:7px}
+#histDate{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;color-scheme:dark}
+#histDateLabel{white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:calc(78px + var(--compact-sab));transform:translateX(-50%) translateY(20px);background:var(--lime);color:#0B0E09;font-weight:700;padding:11px 20px;border-radius:999px;opacity:0;transition:all .25s;z-index:60;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%)}
 .ai{border:1px solid rgba(205,251,71,.35);background:linear-gradient(160deg,rgba(205,251,71,.08),transparent)}
@@ -154,7 +162,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 <!-- HOME -->
 <section class="screen on" id="s-home">
   <div class="row" style="margin-bottom:12px">
-    <div class="eyebrow" id="dateLine" style="margin:0"></div>
+    <button type="button" class="eyebrow date-link" id="dateLine" style="margin:0" aria-label="View today's workout history"></button>
     <button class="chip" id="unitChip"></button>
   </div>
   <div class="hero">
@@ -194,7 +202,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 <section class="screen" id="s-hist">
   <div class="row" style="margin-bottom:16px">
     <h1 style="font-size:24px">History</h1>
-    <div style="display:flex;align-items:center;gap:7px"><input type="date" id="histDate" aria-label="Filter workouts by date"><button class="chip" id="histClear" style="display:none">Clear</button></div>
+    <div class="hist-tools"><label class="hist-picker"><span id="histDateLabel">All dates</span><input type="date" id="histDate" aria-label="Filter workouts by date"></label><button class="chip" id="histClear" style="display:none">Clear</button></div>
   </div>
   <div id="histList"></div>
 </section>
@@ -417,7 +425,7 @@ function renderHome(){
   $('#week').innerHTML=days.map((d,i)=>{
     const dt=new Date(sun);dt.setDate(sun.getDate()+i);
     const done=S.sessions.some(s=>{const x=new Date(s.start);return x.toDateString()===dt.toDateString()});
-    return `<div class="day ${done?'done':''} ${i===dow?'today':''}"><div class="ring">${done?'✓':dt.getDate()}</div>${d}</div>`;
+    return `<button type="button" class="day ${done?'done':''} ${i===dow?'today':''}" onclick="openHistoryDate(${+dt})" aria-label="View history for ${dt.toLocaleDateString()}"><span class="ring">${dt.getDate()}</span><span>${d}</span></button>`;
   }).join('');
   // hero: next workout in rotation
   const last=[...S.sessions].sort((a,b)=>b.start-a.start)[0];
@@ -460,6 +468,8 @@ function renderTpls(){
 /* ---------- render: history ---------- */
 function renderHist(){
   const input=$('#histDate'),selected=input.value;input.max=localDateKey(Date.now());
+  if(selected){const [y,m,d]=selected.split('-').map(Number);$('#histDateLabel').textContent=new Date(y,m-1,d).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+  else $('#histDateLabel').textContent='All dates';
   $('#histClear').style.display=selected?'inline-flex':'none';
   const sessions=[...S.sessions].filter(s=>!selected||localDateKey(s.start)===selected).sort((a,b)=>b.start-a.start);
   if(!sessions.length){
@@ -475,6 +485,10 @@ function renderHist(){
     </div>`;
   }).join('');
 }
+window.openHistoryDate=value=>{
+  $('#histDate').value=typeof value==='string'?value:localDateKey(value);
+  renderHist();goScreen('s-hist');$('#s-hist').scrollTop=0;
+};
 
 function renderAll(){renderHome();renderTpls();renderHist();renderFriends()}
 
@@ -863,6 +877,7 @@ $('#unitChip').onclick=toggleUnits;$('#unitChip2').onclick=toggleUnits;
 $('#aiCheckBtn').onclick=checkAIStatus;
 $('#histDate').onchange=renderHist;
 $('#histClear').onclick=()=>{$('#histDate').value='';renderHist()};
+$('#dateLine').onclick=()=>openHistoryDate(Date.now());
 $('#backupBtn').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));

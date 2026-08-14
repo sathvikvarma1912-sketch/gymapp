@@ -121,6 +121,12 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 .ai{border:1px solid rgba(205,251,71,.35);background:linear-gradient(160deg,rgba(205,251,71,.08),transparent)}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(11,14,9,.3);border-top-color:#0B0E09;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
 @keyframes sp{to{transform:rotate(360deg)}}
+.friend-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;color:var(--lime);font-weight:700}
+.rank{width:34px;height:34px;border-radius:12px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--lime);font-weight:800;flex:none}
+.social-list>*+*{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.status-dot.on{background:var(--lime)}
+@media(max-width:390px){#nav button{min-width:54px;font-size:10px}#nav{padding-left:2px;padding-right:2px}}
 </style>
 </head>
 <body>
@@ -171,6 +177,15 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
   <div id="histList"></div>
 </section>
 
+<!-- FRIENDS -->
+<section class="screen" id="s-friends">
+  <div class="row" style="margin-bottom:16px">
+    <h1 style="font-size:24px">Friends</h1>
+    <button class="chip" id="friendsRefresh" style="display:none">Refresh</button>
+  </div>
+  <div id="friendsContent"><div class="card muted">Loading sync…</div></div>
+</section>
+
 <!-- PROFILE -->
 <section class="screen" id="s-prof">
   <h1 style="font-size:24px;margin-bottom:16px">Profile</h1>
@@ -178,6 +193,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
   <div class="card row pressable" id="backupBtn"><div><b>Back up data</b><div class="muted">Download all data as JSON</div></div><span>↓</span></div>
   <div class="card row pressable" id="restoreBtn"><div><b>Restore data</b><div class="muted">Import a backup file</div></div><span>↑</span></div>
   <input type="file" id="restoreFile" accept=".json" hidden>
+  <div class="card row"><div><b>Cloud sync</b><div class="muted" id="cloudStatus" style="margin-top:4px">Checking setup…</div></div><button class="chip" onclick="goScreen('s-friends')">Manage</button></div>
   <div class="card">
     <div class="row"><div><b>AI features</b><div class="muted" id="aiStatus" style="margin-top:4px">Checking connection…</div></div><button class="chip" id="aiCheckBtn">Check</button></div>
     <div class="muted" style="margin-top:10px">The OpenAI key stays in the server-side /api/ai endpoint on Vercel.</div>
@@ -190,6 +206,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
   <button data-s="s-home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</button>
   <button data-s="s-tpls"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5v11M17.5 6.5v11M2 9v6M22 9v6M6.5 12h11"/></svg>Workouts</button>
   <button data-s="s-hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>History</button>
+  <button data-s="s-friends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c.8-4 3.3-6 6-6s5.2 2 6 6M15 15c2.8 0 4.8 1.7 5.5 4.5"/></svg>Friends</button>
   <button data-s="s-prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-5.5 8-5.5s6.5 1.5 8 5.5"/></svg>Profile</button>
 </nav>
 
@@ -226,6 +243,7 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 <div id="modal"><div id="modalCard"></div></div>
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------- storage (IndexedDB with in-memory fallback) ---------- */
 let mem=null;
@@ -257,6 +275,8 @@ let S={
   sessions:[]
 };
 let active=null,tick=null;
+const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:''};
+let social={friendships:[],profiles:new Map(),overviews:[]};
 
 async function load(){const v=await idb.get();if(v&&v.ver===S.ver)S=v;else save();
   active=S.activeWorkout||null;renderAll();
@@ -314,7 +334,7 @@ async function sendChat(){
   }catch(e){wait.textContent=aiErrorMessage(e);chatLog[chatLog.length-1].txt=wait.textContent}
 }
 
-const save=()=>idb.set(S);
+const save=()=>{idb.set(S);scheduleCloudSync()};
 
 /* ---------- helpers ---------- */
 const $=q=>document.querySelector(q);
@@ -410,7 +430,7 @@ function renderHist(){
   }).join('');
 }
 
-function renderAll(){renderHome();renderTpls();renderHist();}
+function renderAll(){renderHome();renderTpls();renderHist();renderFriends()}
 
 /* ---------- active workout ---------- */
 function startWorkout(tplId,prefill){
@@ -601,6 +621,172 @@ window.aiTemplate=async()=>{
   }catch(e){$('#aiOut').textContent=aiErrorMessage(e);b.textContent='Generate'}
 };
 
+/* ---------- private sync + friends ---------- */
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const friendName=id=>social.profiles.get(id)?.display_name||(id===cloud.user?.id?(S.name||'You'):'Lifter');
+const friendCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>(n%36).toString(36)).join('').toUpperCase();
+const overviewFor=s=>({
+  id:s.id,user_id:cloud.user.id,workout_name:s.name||'Workout',started_at:new Date(s.start).toISOString(),
+  duration_ms:sessionDuration(s),exercise_count:s.entries.length,
+  total_sets:s.entries.reduce((n,e)=>n+e.sets.length,0),units:S.units
+});
+
+function mergeCloudState(remote){
+  if(!remote||remote.ver!==S.ver)return;
+  const localActive=S.activeWorkout;
+  if(!S.sessions.length&&!localActive){S={...remote,ver:2};return}
+  const sessions=new Map((remote.sessions||[]).map(x=>[x.id,x]));
+  (S.sessions||[]).forEach(x=>sessions.set(x.id,x));
+  const templates=new Map((remote.templates||[]).map(x=>[x.id,x]));
+  (S.templates||[]).forEach(x=>templates.set(x.id,x));
+  S={...remote,...S,ver:2,sessions:[...sessions.values()],templates:[...templates.values()],activeWorkout:localActive||remote.activeWorkout||null};
+}
+
+function scheduleCloudSync(){
+  if(!cloud.client||!cloud.user)return;
+  cloud.dirty=true;if(cloud.syncing)return;
+  clearTimeout(cloud.timer);cloud.timer=setTimeout(pushCloudState,1800);
+}
+
+async function syncWorkoutOverviews(){
+  const rows=S.sessions.map(overviewFor);
+  if(rows.length){const {error}=await cloud.client.from('workout_overviews').upsert(rows,{onConflict:'id'});if(error)throw error}
+  const {data,error}=await cloud.client.from('workout_overviews').select('id').eq('user_id',cloud.user.id);
+  if(error)throw error;
+  const localIds=new Set(rows.map(x=>x.id)),removed=(data||[]).filter(x=>!localIds.has(x.id)).map(x=>x.id);
+  if(removed.length){const {error:deleteError}=await cloud.client.from('workout_overviews').delete().in('id',removed);if(deleteError)throw deleteError}
+}
+
+async function pushCloudState(){
+  if(!cloud.client||!cloud.user||cloud.syncing)return;
+  cloud.syncing=true;cloud.dirty=false;renderCloudStatus();
+  try{
+    const {error}=await cloud.client.from('user_states').upsert({user_id:cloud.user.id,state:S,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error)throw error;
+    if(S.name&&cloud.profile?.display_name!==S.name){const {error:profileError}=await cloud.client.from('profiles').update({display_name:S.name,updated_at:new Date().toISOString()}).eq('id',cloud.user.id);if(profileError)throw profileError;cloud.profile.display_name=S.name}
+    await syncWorkoutOverviews();cloud.error='';
+  }catch(e){cloud.error=e.message||'Sync failed'}
+  finally{cloud.syncing=false;renderCloudStatus();if(cloud.dirty)scheduleCloudSync()}
+}
+
+async function ensureCloudProfile(){
+  const profiles=cloud.client.from('profiles');
+  let {data,error}=await profiles.select('id,display_name,friend_code').eq('id',cloud.user.id).maybeSingle();
+  if(error)throw error;
+  if(!data){
+    const created=await profiles.insert({id:cloud.user.id,display_name:S.name||cloud.user.email?.split('@')[0]||'Lifter',friend_code:friendCode()}).select('id,display_name,friend_code').single();
+    if(created.error)throw created.error;data=created.data;
+  }else if(S.name&&data.display_name!==S.name){
+    const updated=await profiles.update({display_name:S.name,updated_at:new Date().toISOString()}).eq('id',cloud.user.id).select('id,display_name,friend_code').single();
+    if(updated.error)throw updated.error;data=updated.data;
+  }
+  cloud.profile=data;
+}
+
+async function pullCloudState(){
+  const {data,error}=await cloud.client.from('user_states').select('state').eq('user_id',cloud.user.id).maybeSingle();
+  if(error)throw error;
+  if(data?.state){mergeCloudState(data.state);active=S.activeWorkout||active;await idb.set(S);renderAll()}
+  await pushCloudState();
+}
+
+async function onCloudSignedIn(){
+  if(!cloud.user||cloud.lastUserId===cloud.user.id)return;
+  cloud.lastUserId=cloud.user.id;cloud.error='';renderFriends();
+  try{await ensureCloudProfile();await pullCloudState();await refreshSocial()}
+  catch(e){cloud.lastUserId=null;cloud.error=e.message||'Could not load cloud data';renderFriends()}
+}
+
+async function initCloud(){
+  try{
+    const r=await fetch('/api/config',{cache:'no-store'}),cfg=await r.json();
+    if(!cfg.supabaseUrl||!cfg.supabaseKey){cloud.error='Supabase is not configured yet';renderFriends();return}
+    if(!window.supabase?.createClient)throw new Error('Cloud library could not load');
+    cloud.configured=true;
+    cloud.client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
+    const {data:{session}}=await cloud.client.auth.getSession();cloud.user=session?.user||null;renderFriends();
+    if(cloud.user)await onCloudSignedIn();
+    cloud.client.auth.onAuthStateChange((_event,next)=>{
+      cloud.user=next?.user||null;if(!cloud.user){cloud.profile=null;cloud.lastUserId=null;social={friendships:[],profiles:new Map(),overviews:[]};renderFriends();return}
+      setTimeout(onCloudSignedIn,0);
+    });
+  }catch(e){cloud.error=e.message||'Cloud sync unavailable';renderFriends()}
+}
+
+window.cloudSignIn=async()=>{
+  const email=$('#syncEmail')?.value.trim();if(!email)return toast('Enter your email');
+  const button=$('#syncSignIn');button.disabled=true;button.textContent='Sending…';
+  const redirectTo=location.origin+location.pathname;
+  const {error}=await cloud.client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
+  button.disabled=false;button.textContent='Email me a sign-in link';
+  if(error)toast(error.message);else toast('Check your email for the sign-in link');
+};
+window.cloudSignOut=async()=>{await cloud.client.auth.signOut();toast('Signed out — local data stays here')};
+window.copyFriendCode=async()=>{await navigator.clipboard.writeText(cloud.profile.friend_code);toast('Friend code copied')};
+window.sendFriendRequest=async()=>{
+  const code=$('#friendCodeIn').value.trim().toUpperCase();if(!code)return;
+  const {data:matches,error:findError}=await cloud.client.rpc('find_profile_by_friend_code',{search_code:code});
+  const person=matches?.[0];
+  if(findError)return toast(findError.message);if(!person)return toast('Friend code not found');if(person.id===cloud.user.id)return toast("That's your own code");
+  const {error}=await cloud.client.from('friendships').insert({requester_id:cloud.user.id,addressee_id:person.id});
+  if(error)return toast(error.code==='23505'?'Request already exists':error.message);
+  $('#friendCodeIn').value='';toast(`Request sent to ${person.display_name}`);await refreshSocial();
+};
+window.acceptFriend=async id=>{const {error}=await cloud.client.from('friendships').update({status:'accepted',updated_at:new Date().toISOString()}).eq('id',id);if(error)toast(error.message);else{toast('Friend added');await refreshSocial()}};
+window.removeFriend=async id=>{if(!confirm('Remove this friend or request?'))return;const {error}=await cloud.client.from('friendships').delete().eq('id',id);if(error)toast(error.message);else await refreshSocial()};
+
+async function refreshSocial(){
+  if(!cloud.user)return;
+  $('#friendsRefresh').disabled=true;
+  try{
+    const {data:links,error}=await cloud.client.from('friendships').select('id,requester_id,addressee_id,status,created_at').order('created_at',{ascending:false});if(error)throw error;
+    const ids=[cloud.user.id,...new Set((links||[]).flatMap(x=>[x.requester_id,x.addressee_id]))];
+    const {data:people,error:peopleError}=await cloud.client.from('profiles').select('id,display_name,friend_code').in('id',ids);if(peopleError)throw peopleError;
+    const sunday=new Date();sunday.setDate(sunday.getDate()-sunday.getDay());sunday.setHours(0,0,0,0);
+    const {data:workouts,error:workoutError}=await cloud.client.from('workout_overviews').select('id,user_id,workout_name,started_at,duration_ms,exercise_count,total_sets,units').gte('started_at',sunday.toISOString()).order('started_at',{ascending:false});if(workoutError)throw workoutError;
+    social={friendships:links||[],profiles:new Map((people||[]).map(x=>[x.id,x])),overviews:workouts||[]};cloud.error='';renderFriends();
+  }catch(e){cloud.error=e.message||'Could not refresh friends';renderFriends()}
+  finally{$('#friendsRefresh').disabled=false}
+}
+
+function renderCloudStatus(){
+  const el=$('#cloudStatus');if(!el)return;
+  if(!cloud.configured)el.textContent='Not configured';
+  else if(!cloud.user)el.textContent='Local only — sign in from Friends';
+  else if(cloud.syncing)el.textContent='Syncing…';
+  else if(cloud.error)el.textContent='Sync needs attention';
+  else el.textContent='Synced and backed up';
+  el.style.color=cloud.error?'var(--danger)':'';
+}
+
+function renderFriends(){
+  const root=$('#friendsContent');if(!root)return;renderCloudStatus();
+  $('#friendsRefresh').style.display=cloud.user?'inline-flex':'none';
+  if(!cloud.configured){root.innerHTML=`<div class="card"><h2 style="font-size:19px">Cloud setup needed</h2><div class="muted" style="margin-top:6px">Your workouts are still saved on this device. Add <b>SUPABASE_URL</b> and <b>SUPABASE_PUBLISHABLE_KEY</b> in Vercel after running the included database schema.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}</div>`;return}
+  if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div><input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Friends see workout name, date, duration, exercise count and set count only — never your exercises, weights or reps.</div></div>`;return}
+  if(!cloud.profile){root.innerHTML=`<div class="card muted">Connecting your profile…${cloud.error?`<div style="color:var(--danger);margin-top:8px">${esc(cloud.error)}</div>`:''}</div>`;return}
+  const received=social.friendships.filter(x=>x.status==='pending'&&x.addressee_id===cloud.user.id);
+  const sent=social.friendships.filter(x=>x.status==='pending'&&x.requester_id===cloud.user.id);
+  const accepted=social.friendships.filter(x=>x.status==='accepted');
+  const allowed=new Set([cloud.user.id,...accepted.map(x=>x.requester_id===cloud.user.id?x.addressee_id:x.requester_id)]);
+  const board=[...allowed].map(id=>{
+    const workouts=social.overviews.filter(x=>x.user_id===id);return{id,name:friendName(id),workouts:workouts.length,sets:workouts.reduce((n,x)=>n+(x.total_sets||0),0)};
+  }).sort((a,b)=>b.workouts-a.workouts||b.sets-a.sets||a.name.localeCompare(b.name));
+  const recent=social.overviews.filter(x=>allowed.has(x.user_id)).slice(0,20);
+  root.innerHTML=`
+    <div class="card"><div class="row"><div><div class="eyebrow">Your friend code</div><div class="friend-code">${esc(cloud.profile.friend_code)}</div></div><button class="chip on" onclick="copyFriendCode()">Copy</button></div><div class="muted" style="margin-top:10px"><span class="status-dot ${cloud.error?'':'on'}"></span>${cloud.error?esc(cloud.error):'Private data synced'} · ${esc(cloud.user.email||'')}</div></div>
+    <div class="card"><b>Add a friend</b><div class="row" style="align-items:flex-end"><input class="txt" id="friendCodeIn" maxlength="12" autocapitalize="characters" placeholder="FRIEND CODE"><button class="btn sm" style="margin-bottom:0" onclick="sendFriendRequest()">Add</button></div></div>
+    ${received.length?`<div class="eyebrow" style="margin:18px 2px 9px">Requests</div><div class="card social-list">${received.map(x=>`<div class="row"><div><b>${esc(friendName(x.requester_id))}</b><div class="muted">Wants to connect</div></div><div><button class="chip on" onclick="acceptFriend(${x.id})">Accept</button> <button class="chip" onclick="removeFriend(${x.id})">Decline</button></div></div>`).join('')}</div>`:''}
+    <div class="eyebrow" style="margin:18px 2px 9px">This week's leaderboard</div>
+    <div class="card social-list">${board.map((x,i)=>`<div class="row"><div style="display:flex;align-items:center;gap:10px"><div class="rank">${i+1}</div><div><b>${esc(x.name)}${x.id===cloud.user.id?' (You)':''}</b><div class="muted">${x.sets} working sets</div></div></div><b style="color:var(--lime)">${x.workouts} workout${x.workouts===1?'':'s'}</b></div>`).join('')}</div>
+    <div class="eyebrow" style="margin:18px 2px 9px">Friends</div>
+    <div class="card social-list">${accepted.length?accepted.map(x=>{const other=x.requester_id===cloud.user.id?x.addressee_id:x.requester_id;return`<div class="row"><div><b>${esc(friendName(other))}</b><div class="muted">Overview sharing on</div></div><button class="chip" onclick="removeFriend(${x.id})">Remove</button></div>`}).join(''):'<div class="muted">No friends yet. Share your code or add theirs.</div>'}${sent.map(x=>`<div class="row"><div><b>${esc(friendName(x.addressee_id))}</b><div class="muted">Request pending</div></div><button class="chip" onclick="removeFriend(${x.id})">Cancel</button></div>`).join('')}</div>
+    <div class="eyebrow" style="margin:18px 2px 9px">Recent activity</div>
+    <div class="card social-list">${recent.length?recent.map(x=>`<div><div class="row"><b>${esc(friendName(x.user_id))}</b><span class="muted">${new Date(x.started_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div style="margin-top:3px">${esc(x.workout_name)}</div><div class="muted">${fmtDur(x.duration_ms)} · ${x.exercise_count} exercises · ${x.total_sets} sets</div></div>`).join(''):'<div class="muted">No workouts shared this week yet.</div>'}</div>
+    <div class="card ai"><b>Overview only</b><div class="muted" style="margin-top:5px">Exercise names, weights and reps stay private in each person's account.</div></div>
+    <button class="btn ghost" onclick="cloudSignOut()">Sign out</button>`;
+}
+
 /* ---------- profile ---------- */
 const toggleUnits=()=>{S.units=S.units==='lbs'?'kg':'lbs';save();renderAll();toast(`Units: ${S.units}`)};
 $('#unitChip').onclick=toggleUnits;$('#unitChip2').onclick=toggleUnits;
@@ -623,20 +809,24 @@ $('#restoreFile').onchange=e=>{
 function modal(html){$('#modalCard').innerHTML=html;$('#modal').classList.add('open')}
 window.closeModal=()=>$('#modal').classList.remove('open');
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
-document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+window.goScreen=id=>{
+  const b=document.querySelector(`#nav button[data-s="${id}"]`);if(!b)return;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
-  $('#'+b.dataset.s).classList.add('on');
-});
+  $('#'+id).classList.add('on');if(id==='s-friends'&&cloud.user)refreshSocial();
+};
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>goScreen(b.dataset.s));
 $('#dupBtn').onclick=duplicateLast;
 $('#dailyCard').onclick=openChat;
 $('#chatClose').onclick=closeChat;
 $('#chatSend').onclick=sendChat;
+$('#friendsRefresh').onclick=refreshSocial;
 $('#chatIn').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,132)+'px'});
 $('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
 window.addEventListener('pagehide',()=>{if(active)persistActive()});
+window.addEventListener('online',scheduleCloudSync);
 window.startWorkout=startWorkout;
-load();
+load().then(initCloud);
 checkAIStatus();
 </script>
 </body>

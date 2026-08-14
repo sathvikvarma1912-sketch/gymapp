@@ -12,10 +12,23 @@ Vercel → your project → Settings → Environment Variables:
 
 Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. The ✨ buttons (AI recap, AI template builder, daily briefing, and coach chat) will then work.
 
-## 3. Install on iPhone
-Open your Vercel URL in **Safari** → Share → **Add to Home Screen**.
-Launches full-screen like a native app.
+## 3. Enable cloud sync and friends (Supabase free tier)
+1. Create a Supabase project.
+2. Open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql), and run it once.
+3. In Supabase **Authentication → URL Configuration**, set the Site URL to your production Vercel URL and add the same URL to Redirect URLs.
+4. The connected project is already the safe default in `api/config.js`. To point another deployment at a different project, add these Vercel environment variables:
+   - `SUPABASE_URL` = the project URL
+   - `SUPABASE_PUBLISHABLE_KEY` = the publishable key (the legacy anon key also works as `SUPABASE_ANON_KEY`)
+5. If you add overrides, apply both variables to **Production** and redeploy.
+
+The publishable key is intentionally delivered to the browser; the SQL file enables Row Level Security so it can only access authorized rows. Never add a Supabase service-role or secret key to the app.
+
+## 4. Install on iPhone or Android
+Open your Vercel URL in Safari on iPhone or Chrome on Android, then choose **Add to Home Screen**.
+It launches full-screen like a native app.
 
 ## Notes
-- Data lives on-device (IndexedDB). Use Profile → Back up data for a JSON export.
+- Data is saved on-device first (IndexedDB), so workouts still work offline. After email sign-in, private data is also synced to Supabase.
+- Friends can only see workout name, date, duration, exercise count, and set count. Exercise names, weights, and reps remain private.
+- Use Profile → Back up data for a portable JSON export.
 - After finishing a workout, tap **Copy for Google Health** to grab the summary (exercises, sets, weights, start/end time, duration) and paste it into Google Health.

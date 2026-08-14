@@ -15,11 +15,15 @@ Apply the variable to **Production**, then redeploy. In the app, open Profile �
 ## 3. Enable cloud sync and friends (Supabase free tier)
 1. Create a Supabase project.
 2. Open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql), and run it once.
-3. In Supabase **Authentication → URL Configuration**, set the Site URL to your production Vercel URL and add the same URL to Redirect URLs.
+3. In Supabase **Authentication → URL Configuration**, set:
+   - Site URL: `https://gymapp-sathvik12.vercel.app`
+   - Redirect URL: `https://gymapp-sathvik12.vercel.app/**`
 4. The connected project is already the safe default in `api/config.js`. To point another deployment at a different project, add these Vercel environment variables:
    - `SUPABASE_URL` = the project URL
    - `SUPABASE_PUBLISHABLE_KEY` = the publishable key (the legacy anon key also works as `SUPABASE_ANON_KEY`)
 5. If you add overrides, apply both variables to **Production** and redeploy.
+
+No database password, service-role key, or connection string belongs in Vercel. If the app is deployed at a different public URL, add `APP_URL` in Vercel and use that same URL in Supabase Authentication URL Configuration.
 
 The publishable key is intentionally delivered to the browser; the SQL file enables Row Level Security so it can only access authorized rows. Never add a Supabase service-role or secret key to the app.
 

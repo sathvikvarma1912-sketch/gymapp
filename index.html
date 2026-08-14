@@ -309,7 +309,7 @@ let S={
   sessions:[]
 };
 let active=null,tick=null;
-const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:''};
+const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:''};
 let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],all:[]}};
 let leaderMode='days',leaderRange='week';
 
@@ -779,8 +779,17 @@ async function initCloud(){
     if(!cfg.supabaseUrl||!cfg.supabaseKey){cloud.error='Supabase is not configured yet';renderFriends();return}
     if(!window.supabase?.createClient)throw new Error('Cloud library could not load');
     cloud.configured=true;
-    cloud.client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
+    const localHost=['localhost','127.0.0.1'].includes(location.hostname);
+    cloud.redirectUrl=localHost?location.origin+location.pathname:(cfg.appUrl||location.origin+'/');
+    // This is a client-only PWA using Supabase's default magic-link template.
+    // Implicit flow lets the browser receive the session directly from that link.
+    cloud.client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
     const {data:{session}}=await cloud.client.auth.getSession();cloud.user=session?.user||null;renderFriends();
+    const authParams=new URLSearchParams(location.search);
+    const authHash=new URLSearchParams(location.hash.replace(/^#/,''));
+    const callbackError=authParams.get('error_description')||authHash.get('error_description');
+    if(callbackError){cloud.error=callbackError.replace(/\+/g,' ');history.replaceState({},'',location.pathname);renderFriends()}
+    else if(location.hash||authParams.has('code'))history.replaceState({},'',location.pathname);
     if(cloud.user)await onCloudSignedIn();
     cloud.client.auth.onAuthStateChange((_event,next)=>{
       cloud.user=next?.user||null;if(!cloud.user){cloud.profile=null;cloud.lastUserId=null;social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],all:[]}};renderFriends();return}
@@ -792,10 +801,12 @@ async function initCloud(){
 window.cloudSignIn=async()=>{
   const email=$('#syncEmail')?.value.trim();if(!email)return toast('Enter your email');
   const button=$('#syncSignIn');button.disabled=true;button.textContent='Sending…';
-  const redirectTo=location.origin+location.pathname;
-  const {error}=await cloud.client.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo}});
-  button.disabled=false;button.textContent='Email me a sign-in link';
-  if(error)toast(error.message);else toast('Check your email for the sign-in link');
+  try{
+    const {error}=await cloud.client.auth.signInWithOtp({email,options:{emailRedirectTo:cloud.redirectUrl}});
+    if(error)throw error;
+    cloud.error='';toast('Check your email for a new sign-in link');
+  }catch(e){cloud.error=e.message||'Could not send the sign-in link';toast(cloud.error);renderFriends()}
+  finally{if(button?.isConnected){button.disabled=false;button.textContent='Email me a sign-in link'}}
 };
 window.cloudSignOut=async()=>{await cloud.client.auth.signOut();toast('Signed out — local data stays here')};
 window.copyFriendCode=async()=>{await navigator.clipboard.writeText(cloud.profile.friend_code);toast('Friend code copied')};
@@ -849,7 +860,7 @@ function renderFriends(){
   const root=$('#friendsContent');if(!root)return;renderCloudStatus();
   $('#friendsRefresh').style.display=cloud.user?'inline-flex':'none';
   if(!cloud.configured){root.innerHTML=`<div class="card"><h2 style="font-size:19px">Cloud setup needed</h2><div class="muted" style="margin-top:6px">Your workouts are still saved on this device. Add <b>SUPABASE_URL</b> and <b>SUPABASE_PUBLISHABLE_KEY</b> in Vercel after running the included database schema.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}</div>`;return}
-  if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div><input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Friends see workout overview and volume totals only — never your exercises, individual weights or reps.</div></div>`;return}
+  if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}<input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Friends see workout overview and volume totals only — never your exercises, individual weights or reps.</div></div>`;return}
   if(!cloud.profile){root.innerHTML=`<div class="card muted">Connecting your profile…${cloud.error?`<div style="color:var(--danger);margin-top:8px">${esc(cloud.error)}</div>`:''}</div>`;return}
   const received=social.friendships.filter(x=>x.status==='pending'&&x.addressee_id===cloud.user.id);
   const sent=social.friendships.filter(x=>x.status==='pending'&&x.requester_id===cloud.user.id);

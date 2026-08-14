@@ -294,7 +294,7 @@ const idb={
 
 /* ---------- state ---------- */
 const uid=()=>Math.random().toString(36).slice(2,9);
-const seedEx=(n,s)=>({id:uid(),name:n,sets:s||2});
+const seedEx=(n,s,reps='')=>({id:uid(),name:n,sets:s||2,reps});
 const mk=a=>a.map(x=>seedEx(x[0],x[1]));
 let S={
   ver:2,
@@ -500,7 +500,7 @@ function renderAll(){renderHome();renderTpls();renderHist();renderFriends()}
 function startWorkout(tplId,prefill){
   const t=S.templates.find(x=>x.id===tplId);
   active={id:uid(),templateId:tplId,name:prefill?prefill.name:t.name,start:Date.now(),units:S.units,pausedMs:0,pausedAt:null,
-    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:e.sets||2},()=>({w:'',r:''}))})))
+    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:e.sets||2},()=>({w:'',r:e.reps||''}))})))
       .map(e=>({...e,sets:e.sets.map(s=>({...s}))}))};
   $('#wkName').textContent=active.name;
   persistActive();openSheet();renderActive();startTimer();
@@ -609,8 +609,8 @@ window.editTpl=id=>{
     <input class="txt" id="tplName">
     <div id="tplExs" style="margin-top:12px">${t.exercises.map((e,i)=>`
       <div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">×${e.sets||2}</span></div>
-        <div class="tpl-ex-actions"><button class="chip" onclick="editTplExName('${t.id}',${i})" aria-label="Edit ${esc(e.name)} name">✎</button><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
+        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">×${e.sets||2}${e.reps?` · ${esc(e.reps)} reps`:''}</span></div>
+        <div class="tpl-ex-actions"><button class="chip" onclick="editTplExercise('${t.id}',${i})" aria-label="Edit ${esc(e.name)}">✎</button><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
         <button class="chip" onclick="mvEx('${t.id}',${i},1)">↓</button>
         <button class="chip" onclick="rmTplEx('${t.id}',${i})">✕</button></div></div>`).join('')}</div>
     <input class="txt" id="tplNewEx" placeholder="Add exercise…">
@@ -621,12 +621,15 @@ window.editTpl=id=>{
 window.mvEx=(id,i,d)=>{const t=S.templates.find(x=>x.id===id);const j=i+d;if(j<0||j>=t.exercises.length)return;
   [t.exercises[i],t.exercises[j]]=[t.exercises[j],t.exercises[i]];save();editTpl(id)};
 window.rmTplEx=(id,i)=>{const t=S.templates.find(x=>x.id===id);t.exercises.splice(i,1);save();editTpl(id)};
-window.editTplExName=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i];if(!exercise)return;
-  modal(`<h2 style="font-size:20px">Edit template exercise</h2><div class="muted" style="margin-top:4px">This updates every new workout started from this template.</div>
-    <input class="txt" id="tplExerciseName" maxlength="80" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExName('${id}',${i})}">
-    <button class="btn" style="margin-top:14px" onclick="saveTplExName('${id}',${i})">Save exercise name</button>`);
-  const input=$('#tplExerciseName');input.value=exercise.name;input.focus();input.select()};
-window.saveTplExName=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');exercise.name=name;save();editTpl(id);toast('Template exercise renamed')};
+window.editTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i];if(!exercise)return;
+  modal(`<h2 style="font-size:20px">Edit template exercise</h2><div class="muted" style="margin-top:4px">The target reps will be prefilled when you start this workout.</div>
+    <label class="muted" for="tplExerciseName" style="display:block;margin-top:14px">Exercise name</label>
+    <input class="txt" id="tplExerciseName" maxlength="80" autocomplete="off" enterkeyhint="next">
+    <label class="muted" for="tplExerciseReps" style="display:block;margin-top:12px">Target reps per set</label>
+    <input class="txt" id="tplExerciseReps" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="Leave blank" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExercise('${id}',${i})}">
+    <button class="btn" style="margin-top:14px" onclick="saveTplExercise('${id}',${i})">Save exercise</button>`);
+  const nameInput=$('#tplExerciseName');nameInput.value=exercise.name;$('#tplExerciseReps').value=exercise.reps||'';nameInput.focus();nameInput.select()};
+window.saveTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim(),repsInput=$('#tplExerciseReps')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');if(repsInput&&!/^\d+$/.test(repsInput))return toast('Enter valid target reps');const reps=repsInput?Math.min(999,Math.max(1,parseInt(repsInput,10))):'';exercise.name=name;exercise.reps=reps;save();editTpl(id);toast('Template exercise updated')};
 window.addTplEx=id=>{const t=S.templates.find(x=>x.id===id);const n=$('#tplNewEx').value.trim();if(!n)return;
   t.exercises.push(seedEx(n));save();editTpl(id)};
 window.saveTpl=id=>{const t=S.templates.find(x=>x.id===id);t.name=$('#tplName').value.trim()||t.name;save();closeModal();renderAll()};

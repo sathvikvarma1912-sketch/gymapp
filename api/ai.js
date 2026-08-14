@@ -8,6 +8,10 @@ const json = (res, status, body) => {
 export default async function handler(req, res) {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+  const configuredMax = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS);
+  const maxOutputTokens = Number.isFinite(configuredMax)
+    ? Math.min(4000, Math.max(500, configuredMax))
+    : 1600;
 
   if (req.method === 'GET') {
     if (!apiKey) return json(res, 200, { ok: true, configured: false, ready: false });
@@ -40,6 +44,9 @@ export default async function handler(req, res) {
   if (typeof prompt !== 'string' || !prompt.trim()) {
     return json(res, 400, { error: 'Missing prompt' });
   }
+  if (prompt.length > 100000) {
+    return json(res, 413, { error: 'This message is too large to process.' });
+  }
   if (!apiKey) {
     return json(res, 503, {
       error: 'OPENAI_API_KEY is not configured in Vercel.',
@@ -60,7 +67,8 @@ export default async function handler(req, res) {
           ? system
           : 'You are a helpful fitness coach.',
         input: prompt.trim(),
-        max_output_tokens: 500,
+        reasoning: { effort: 'none' },
+        max_output_tokens: maxOutputTokens,
       }),
     });
 

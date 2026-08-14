@@ -8,6 +8,7 @@
 Vercel → your project → Settings → Environment Variables:
 - `OPENAI_API_KEY` = your OpenAI key
 - Optional: `OPENAI_MODEL` = a Responses API model ID (defaults to `gpt-5.6-luna`)
+- Optional: `OPENAI_MAX_OUTPUT_TOKENS` = longer or shorter replies (defaults to `1600`, capped at `4000`)
 
 Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. The ✨ buttons (AI recap, AI template builder, daily briefing, and coach chat) will then work.
 

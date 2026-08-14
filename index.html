@@ -21,7 +21,7 @@ html,body{height:100%;min-height:100%;background:var(--bg)}
 body{background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-input,select{font:inherit;color:inherit}
+input,select,textarea{font:inherit;color:inherit}
 #app{height:100%;height:100dvh;display:flex;flex-direction:column}
 .screen{flex:1;overflow-y:auto;padding:calc(14px + var(--sat)) 18px 110px;display:none;-webkit-overflow-scrolling:touch}
 .screen.on{display:block;animation:fade .25s ease}
@@ -74,11 +74,16 @@ input,select{font:inherit;color:inherit}
 #sheet.open{display:flex;transform:none}
 #sheetHead{padding:calc(12px + var(--sat)) 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(11,14,9,.95)}
 #timer{font-family:"Space Grotesk";font-size:22px;font-weight:700;color:var(--lime);font-variant-numeric:tabular-nums}
+#timer.paused{color:var(--danger)}
+#wkNameEdit{display:flex;align-items:center;justify-content:center;gap:5px;max-width:190px;margin:auto;font-weight:700}
+#wkName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#pauseWk{margin-top:4px;padding:4px 10px;font-size:11px}
 #sheetBody{flex:1;overflow-y:auto;padding:16px 18px 140px;-webkit-overflow-scrolling:touch}
 #sheetFoot{position:absolute;left:0;right:0;bottom:0;padding:12px 18px calc(14px + var(--sab));background:linear-gradient(transparent,var(--bg) 30%)}
 
 .ex{margin-bottom:18px}
 .ex .last{font-size:12px;color:var(--lime-dim);margin-top:2px}
+.ex .best{font-size:12px;color:var(--text);margin-top:3px}
 .set{display:grid;grid-template-columns:34px 1fr 1fr 40px;gap:10px;align-items:center;margin-top:10px}
 .set .n{color:var(--muted);font-weight:700;font-size:13px;text-align:center}
 .set input{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:17px;font-weight:700;width:100%;outline:none;transition:border-color .15s}
@@ -92,7 +97,8 @@ input,select{font:inherit;color:inherit}
 #chat{position:fixed;inset:0;background:var(--bg);z-index:35;display:none;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,.25,1)}
 #chat.open{display:flex;transform:none}
 #chatBody{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;-webkit-overflow-scrolling:touch}
-#chatFoot{display:flex;gap:10px;align-items:center;padding:12px 18px calc(14px + var(--sab));border-top:1px solid var(--line)}
+#chatFoot{display:flex;gap:10px;align-items:flex-end;padding:12px 18px calc(14px + var(--sab));border-top:1px solid var(--line)}
+#chatIn{resize:none;min-height:46px;max-height:132px;line-height:1.4;overflow-y:auto}
 .msg{max-width:82%;padding:11px 15px;border-radius:18px;margin-bottom:9px;font-size:14px;line-height:1.5;white-space:pre-wrap;animation:fade .2s ease}
 .msg.me{background:var(--lime);color:#0B0E09;margin-left:auto;border-bottom-right-radius:6px;font-weight:600}
 .msg.bot{background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:6px}
@@ -103,10 +109,12 @@ input,select{font:inherit;color:inherit}
 #modalCard{background:var(--card);border-radius:26px 26px 0 0;padding:22px 20px calc(24px + var(--sab));width:100%;max-height:85%;overflow-y:auto;animation:up .3s cubic-bezier(.32,.72,.25,1)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 #modalCard textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:16px;color:var(--text);padding:14px;font:13px/1.6 ui-monospace,monospace;min-height:180px;outline:none;margin:12px 0}
-input.txt{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;outline:none;margin-top:8px}
-input.txt:focus{border-color:var(--lime)}
+input.txt,textarea.txt{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;outline:none;margin-top:8px}
+input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 
 .hist .vol{color:var(--lime);font-weight:700}
+.hist-date{font-size:13px;color:var(--lime);margin:18px 2px 8px;font-weight:700;letter-spacing:.04em}
+#histDate{color-scheme:dark;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:9px 10px;outline:none;min-width:145px}
 #toast{position:fixed;left:50%;bottom:calc(96px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--lime);color:#0B0E09;font-weight:700;padding:11px 20px;border-radius:999px;opacity:0;transition:all .25s;z-index:60;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%)}
 .ai{border:1px solid rgba(205,251,71,.35);background:linear-gradient(160deg,rgba(205,251,71,.08),transparent)}
@@ -155,7 +163,10 @@ input.txt:focus{border-color:var(--lime)}
 
 <!-- HISTORY -->
 <section class="screen" id="s-hist">
-  <h1 style="font-size:24px;margin-bottom:16px">History</h1>
+  <div class="row" style="margin-bottom:16px">
+    <h1 style="font-size:24px">History</h1>
+    <div style="display:flex;align-items:center;gap:7px"><input type="date" id="histDate" aria-label="Filter workouts by date"><button class="chip" id="histClear" style="display:none">Clear</button></div>
+  </div>
   <div id="histList"></div>
 </section>
 
@@ -185,7 +196,11 @@ input.txt:focus{border-color:var(--lime)}
 <div id="sheet">
   <div id="sheetHead">
     <button class="chip" id="cancelWk">✕</button>
-    <div style="text-align:center"><div class="eyebrow" id="wkName" style="margin:0"></div><div id="timer">0:00</div></div>
+    <div style="text-align:center;min-width:0;flex:1">
+      <button id="wkNameEdit" aria-label="Edit workout name"><span id="wkName"></span><span aria-hidden="true">✎</span></button>
+      <div id="timer">0:00</div>
+      <button class="chip" id="pauseWk">Pause</button>
+    </div>
     <button class="chip on" id="finishWk">Finish</button>
   </div>
   <div id="sheetBody"></div>
@@ -201,7 +216,7 @@ input.txt:focus{border-color:var(--lime)}
   </div>
   <div id="chatBody"></div>
   <div id="chatFoot">
-    <input class="txt" id="chatIn" placeholder="Message your coach…" style="margin:0;flex:1">
+    <textarea class="txt" id="chatIn" rows="1" placeholder="Message your coach…" style="margin:0;flex:1"></textarea>
     <button class="btn sm pressable" id="chatSend">↑</button>
   </div>
 </div>
@@ -242,7 +257,9 @@ let S={
 };
 let active=null,tick=null;
 
-async function load(){const v=await idb.get();if(v&&v.ver===S.ver)S=v;else save();renderAll();
+async function load(){const v=await idb.get();if(v&&v.ver===S.ver)S=v;else save();
+  active=S.activeWorkout||null;renderAll();
+  if(active){$('#wkName').textContent=active.name;openSheet();renderActive();startTimer()}
   if(!S.name)askName();else dailyBrief();}
 
 /* ---------- onboarding ---------- */
@@ -258,7 +275,7 @@ window.saveName=()=>{S.name=($('#nameIn').value.trim()||'Lifter');save();closeMo
 function greet(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
 function workoutContext(){
   const recent=[...S.sessions].sort((a,b)=>b.start-a.start).slice(0,10)
-    .map(s=>`${s.name} on ${new Date(s.start).toLocaleDateString()} (${fmtDur(s.end-s.start)}, ${vol(s).toLocaleString()} ${S.units}): `+
+    .map(s=>`${s.name} on ${new Date(s.start).toLocaleDateString()} (${fmtDur(sessionDuration(s))}, ${vol(s).toLocaleString()} ${S.units}): `+
       s.entries.map(e=>`${e.name} ${e.sets.map(x=>`${x.w||0}x${x.r||0}`).join(',')}`).join('; ')).join('\n');
   return `User: ${S.name}. Units: ${S.units}. Split rotation: ${S.templates.map(t=>t.name).join(' → ')} (+ rest days).\nRecent workouts (newest first):\n${recent||'No workouts logged yet.'}`;
 }
@@ -286,14 +303,14 @@ function addMsg(who,txt){chatLog.push({who,txt});
   $('#chatBody').appendChild(d);$('#chatBody').scrollTop=1e9;return d;}
 async function sendChat(){
   const t=$('#chatIn').value.trim();if(!t)return;
-  $('#chatIn').value='';addMsg('me',t);
+  $('#chatIn').value='';$('#chatIn').style.height='auto';addMsg('me',t);
+  const convo=chatLog.slice(-24).map(m=>`${m.who==='me'?'User':'Coach'}: ${m.txt}`).join('\n');
   const wait=addMsg('bot','…');
   try{
-    const convo=chatLog.slice(-12).map(m=>`${m.who==='me'?'User':'Coach'}: ${m.txt}`).join('\n');
-    wait.textContent=await askAI(`${convo}\nUser: ${t}`,
-      `You are a friendly, knowledgeable lifting coach chatting with ${S.name}. Keep replies short and conversational. Use their workout data below only when relevant to what they ask.\n\n${workoutContext()}`);
+    wait.textContent=await askAI(convo,
+      `You are a friendly, knowledgeable lifting coach chatting with ${S.name}. Be conversational and concise, but answer completely with as much detail as the question needs. Use their workout data below only when relevant.\n\n${workoutContext()}`);
     chatLog[chatLog.length-1].txt=wait.textContent;
-  }catch(e){wait.textContent=aiErrorMessage(e)}
+  }catch(e){wait.textContent=aiErrorMessage(e);chatLog[chatLog.length-1].txt=wait.textContent}
 }
 
 const save=()=>idb.set(S);
@@ -304,12 +321,24 @@ const fmtT=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
 const fmtDur=ms=>{const m=Math.round(ms/60000);return m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m} min`};
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};
 const vol=s=>s.entries.reduce((a,e)=>a+e.sets.reduce((b,x)=>b+(+x.w||0)*(+x.r||0),0),0);
+const sessionDuration=s=>s.durationMs??Math.max(0,(s.end||Date.now())-s.start);
+const activeElapsed=()=>active?Math.max(0,Date.now()-active.start-(active.pausedMs||0)-(active.pausedAt?Date.now()-active.pausedAt:0)):0;
+const persistActive=()=>{S.activeWorkout=active;save()};
+const localDateKey=ts=>{const d=new Date(ts),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};
 function lastFor(name,excludeId){
   for(const s of [...S.sessions].sort((a,b)=>b.start-a.start)){
     if(s.id===excludeId)continue;
-    const e=s.entries.find(e=>e.name===name&&e.sets.some(x=>x.w||x.r));
+    const e=s.entries.find(e=>e.name.toLowerCase()===name.toLowerCase()&&e.sets.some(x=>x.w||x.r));
     if(e)return e.sets.filter(x=>x.w||x.r).map(x=>`${x.w||0}×${x.r||0}`).join('  ');
   }return null;
+}
+function bestFor(name){
+  const entries=S.sessions.flatMap(s=>s.entries.filter(e=>e.name.toLowerCase()===name.toLowerCase()));
+  const sets=entries.flatMap(e=>e.sets);if(!sets.length)return null;
+  const weight=Math.max(...sets.map(s=>+s.w||0));if(!weight)return null;
+  const atWeight=sets.filter(s=>(+s.w||0)===weight);
+  const setCount=Math.max(...entries.map(e=>e.sets.filter(s=>(+s.w||0)===weight).length));
+  return {weight,reps:Math.max(...atWeight.map(s=>+s.r||0)),sets:setCount};
 }
 
 /* ---------- render: home ---------- */
@@ -363,12 +392,21 @@ function renderTpls(){
 
 /* ---------- render: history ---------- */
 function renderHist(){
-  $('#histList').innerHTML=S.sessions.length?[...S.sessions].sort((a,b)=>b.start-a.start).map(s=>`
-    <div class="card hist pressable" onclick="viewSession('${s.id}')">
-      <div class="row"><b>${s.name}</b><span class="muted">${new Date(s.start).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div>
-      <div class="row" style="margin-top:6px"><span class="muted">${s.entries.length} exercises · ${fmtDur(s.end-s.start)}</span><span class="vol">${vol(s).toLocaleString()} ${S.units}</span></div>
-    </div>`).join('')
-  :`<div class="card muted">Finished workouts land here.</div>`;
+  const input=$('#histDate'),selected=input.value;input.max=localDateKey(Date.now());
+  $('#histClear').style.display=selected?'inline-flex':'none';
+  const sessions=[...S.sessions].filter(s=>!selected||localDateKey(s.start)===selected).sort((a,b)=>b.start-a.start);
+  if(!sessions.length){
+    $('#histList').innerHTML=`<div class="card muted">${selected?'No workouts logged on this date.':'Finished workouts land here.'}</div>`;return;
+  }
+  let previousDate='';
+  $('#histList').innerHTML=sessions.map(s=>{
+    const key=localDateKey(s.start),heading=key===previousDate?'':`<div class="hist-date">${new Date(s.start).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>`;
+    previousDate=key;
+    return `${heading}<div class="card hist pressable" onclick="viewSession('${s.id}')">
+      <div class="row"><b>${s.name}</b><span class="muted">${new Date(s.start).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>
+      <div class="row" style="margin-top:6px"><span class="muted">${s.entries.length} exercises · ${fmtDur(sessionDuration(s))}</span><span class="vol">${vol(s).toLocaleString()} ${S.units}</span></div>
+    </div>`;
+  }).join('');
 }
 
 function renderAll(){renderHome();renderTpls();renderHist();}
@@ -376,12 +414,11 @@ function renderAll(){renderHome();renderTpls();renderHist();}
 /* ---------- active workout ---------- */
 function startWorkout(tplId,prefill){
   const t=S.templates.find(x=>x.id===tplId);
-  active={id:uid(),templateId:tplId,name:prefill?prefill.name:t.name,start:Date.now(),
+  active={id:uid(),templateId:tplId,name:prefill?prefill.name:t.name,start:Date.now(),pausedMs:0,pausedAt:null,
     entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:e.sets||2},()=>({w:'',r:''}))})))
       .map(e=>({...e,sets:e.sets.map(s=>({...s}))}))};
   $('#wkName').textContent=active.name;
-  openSheet();renderActive();
-  clearInterval(tick);tick=setInterval(()=>{$('#timer').textContent=fmtT(Math.floor((Date.now()-active.start)/1000))},1000);
+  persistActive();openSheet();renderActive();startTimer();
 }
 function duplicateLast(){
   const last=[...S.sessions].sort((a,b)=>b.start-a.start)[0];if(!last)return;
@@ -390,27 +427,35 @@ function duplicateLast(){
 }
 function openSheet(){const sh=$('#sheet');sh.style.display='flex';requestAnimationFrame(()=>sh.classList.add('open'))}
 function closeSheet(){const sh=$('#sheet');sh.classList.remove('open');setTimeout(()=>sh.style.display='none',330);clearInterval(tick)}
+function updateTimer(){
+  if(!active)return;$('#timer').textContent=fmtT(Math.floor(activeElapsed()/1000));
+  $('#timer').classList.toggle('paused',Boolean(active.pausedAt));
+  $('#pauseWk').textContent=active.pausedAt?'Resume':'Pause';
+}
+function startTimer(){clearInterval(tick);updateTimer();tick=setInterval(updateTimer,500)}
 
 function renderActive(){
   $('#sheetBody').innerHTML=active.entries.map((e,ei)=>{
-    const last=lastFor(e.name,active.id);
+    const last=lastFor(e.name,active.id),best=bestFor(e.name);
     return `<div class="card ex">
-      <div class="row"><div><h3>${e.name}</h3>${last?`<div class="last">Last time: ${last}</div>`:''}</div>
+      <div class="row"><div><h3>${e.name}</h3>
+        ${best?`<div class="best">Previous best: <b>${best.weight} ${S.units} × ${best.reps} reps</b> · ${best.sets} set${best.sets===1?'':'s'} at top weight</div>`:'<div class="best muted">Previous best: no logged sets yet</div>'}
+        ${last?`<div class="last">Last workout: ${last}</div>`:''}</div>
         <button class="chip" onclick="removeEx(${ei})">✕</button></div>
       <div class="setlbl"><span>Set</span><span>${S.units}</span><span>Reps</span><span></span></div>
       ${e.sets.map((s,si)=>`<div class="set">
         <div class="n">${si+1}</div>
-        <input inputmode="decimal" placeholder="0" value="${s.w}" onchange="upSet(${ei},${si},'w',this.value)">
-        <input inputmode="numeric" placeholder="0" value="${s.r}" onchange="upSet(${ei},${si},'r',this.value)">
+        <input inputmode="decimal" placeholder="0" value="${s.w}" oninput="upSet(${ei},${si},'w',this.value)">
+        <input inputmode="numeric" placeholder="0" value="${s.r}" oninput="upSet(${ei},${si},'r',this.value)">
         <button class="del" onclick="delSet(${ei},${si})">–</button>
       </div>`).join('')}
       <button class="addset pressable" onclick="addSet(${ei})">+ Add set</button>
     </div>`}).join('');
 }
-window.upSet=(ei,si,k,v)=>{active.entries[ei].sets[si][k]=v};
-window.addSet=ei=>{const prev=active.entries[ei].sets.at(-1);active.entries[ei].sets.push({w:prev?prev.w:'',r:prev?prev.r:''});renderActive()};
-window.delSet=(ei,si)=>{active.entries[ei].sets.splice(si,1);renderActive()};
-window.removeEx=ei=>{active.entries.splice(ei,1);renderActive()};
+window.upSet=(ei,si,k,v)=>{active.entries[ei].sets[si][k]=v;persistActive()};
+window.addSet=ei=>{const prev=active.entries[ei].sets.at(-1);active.entries[ei].sets.push({w:prev?prev.w:'',r:prev?prev.r:''});persistActive();renderActive()};
+window.delSet=(ei,si)=>{active.entries[ei].sets.splice(si,1);persistActive();renderActive()};
+window.removeEx=ei=>{active.entries.splice(ei,1);persistActive();renderActive()};
 
 $('#addExBtn').onclick=()=>{
   modal(`<h2 style="font-size:20px">Add exercise</h2>
@@ -419,26 +464,35 @@ $('#addExBtn').onclick=()=>{
 };
 window.addExGo=()=>{const n=$('#newExName').value.trim();if(!n)return;
   active.entries.push({exId:uid(),name:n,sets:[{w:'',r:''},{w:'',r:''}]});
-  closeModal();renderActive();};
+  persistActive();closeModal();renderActive();};
 
-$('#cancelWk').onclick=()=>{if(confirm('Discard this workout?')){active=null;closeSheet()}};
+$('#pauseWk').onclick=()=>{
+  if(active.pausedAt){active.pausedMs=(active.pausedMs||0)+(Date.now()-active.pausedAt);active.pausedAt=null;toast('Workout resumed')}
+  else{active.pausedAt=Date.now();toast('Workout paused')}
+  persistActive();updateTimer();
+};
+$('#wkNameEdit').onclick=()=>{modal(`<h2 style="font-size:20px">Workout name</h2>
+  <input class="txt" id="activeName" maxlength="80">
+  <button class="btn" style="margin-top:14px" onclick="saveActiveName()">Save name</button>`);$('#activeName').value=active.name};
+window.saveActiveName=()=>{active.name=$('#activeName').value.trim()||active.name;$('#wkName').textContent=active.name;persistActive();closeModal()};
+$('#cancelWk').onclick=()=>{if(confirm('Discard this workout?')){active=null;S.activeWorkout=null;save();closeSheet()}};
 $('#finishWk').onclick=()=>{
-  active.end=Date.now();
-  active.entries=active.entries.map(e=>({...e,sets:e.sets.filter(s=>s.w||s.r)})).filter(e=>e.sets.length);
-  if(!active.entries.length){toast('Log at least one set');return}
-  S.sessions.push(active);save();const s=active;active=null;closeSheet();renderAll();showSummary(s);
+  const entries=active.entries.map(e=>({...e,sets:e.sets.filter(s=>s.w||s.r)})).filter(e=>e.sets.length);
+  if(!entries.length){toast('Log at least one set');return}
+  active.end=Date.now();active.durationMs=activeElapsed();active.pausedAt=null;active.entries=entries;
+  S.sessions.push(active);S.activeWorkout=null;const s=active;active=null;save();closeSheet();renderAll();showSummary(s);
 };
 
 /* ---------- summary + export ---------- */
 function exportText(s){
   let t=`${s.name} — ${new Date(s.start).toLocaleDateString()}\n`;
-  t+=`Start: ${new Date(s.start).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}  End: ${new Date(s.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}  Duration: ${fmtDur(s.end-s.start)}\n\n`;
+  t+=`Start: ${new Date(s.start).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}  End: ${new Date(s.end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}  Active time: ${fmtDur(sessionDuration(s))}\n\n`;
   s.entries.forEach(e=>{t+=`${e.name}\n`;e.sets.forEach((x,i)=>t+=`  Set ${i+1}: ${x.w||0} ${S.units} × ${x.r||0} reps\n`)});
   t+=`\nTotal volume: ${vol(s).toLocaleString()} ${S.units}`;return t;
 }
 function showSummary(s){
   modal(`<h2 style="font-size:22px">Workout complete 🎉</h2>
-    <div class="muted" style="margin-top:4px">${s.name} · ${fmtDur(s.end-s.start)} · ${vol(s).toLocaleString()} ${S.units}</div>
+    <div class="muted" style="margin-top:4px">${s.name} · ${fmtDur(sessionDuration(s))} · ${vol(s).toLocaleString()} ${S.units}</div>
     <textarea id="sumTxt" readonly>${exportText(s)}</textarea>
     <button class="btn pressable" onclick="copySum()">Copy for Google Health</button>
     <button class="btn ghost pressable" style="margin-top:10px" onclick="shareSum()">Share…</button>
@@ -452,7 +506,7 @@ window.viewSession=id=>{
   const s=S.sessions.find(x=>x.id===id);
   modal(`<div class="row"><h2 style="font-size:20px">${s.name}</h2>
     <button class="chip" onclick="delSession('${s.id}')">Delete</button></div>
-    <div class="muted">${new Date(s.start).toLocaleString()} · ${fmtDur(s.end-s.start)}</div>
+    <div class="muted">${new Date(s.start).toLocaleString()} · ${fmtDur(sessionDuration(s))}</div>
     <textarea readonly id="sumTxt">${exportText(s)}</textarea>
     <button class="btn" onclick="copySum()">Copy summary</button>`);
 };
@@ -524,7 +578,7 @@ window.aiSummary=async id=>{
     const hist=[...S.sessions].filter(x=>x.id!==id&&x.name===s.name).sort((a,b)=>b.start-a.start)[0];
     out.textContent=await askAI(
       `Today's workout:\n${exportText(s)}\n\nPrevious ${s.name} session:\n${hist?exportText(hist):'none'}`,
-      'You are a concise lifting coach. In 3-4 sentences, recap this workout: call out progress vs the previous session, total volume, and one focus for next time. Plain text.');
+      'You are a knowledgeable lifting coach. Give a complete 5-7 sentence recap: compare progress with the previous session, cover volume and meaningful exercise improvements, then give specific priorities for next time. Plain text.');
   }catch(e){out.textContent=aiErrorMessage(e)}
   b.innerHTML='✨ AI recap';
 };
@@ -541,7 +595,7 @@ window.aiTemplate=async()=>{
   try{
     const txt=await askAI(p,'Return ONLY JSON, no markdown: an array of workout templates like [{"name":"Upper A","exercises":["Bench Press","..."]}]. 4-8 exercises each.');
     const arr=JSON.parse(txt.replace(/```json|```/g,'').trim());
-    arr.forEach(t=>S.templates.push({id:uid(),name:t.name,icon:'✨',exercises:t.exercises.map(seedEx)}));
+    arr.forEach(t=>S.templates.push({id:uid(),name:t.name,icon:'✨',exercises:t.exercises.map(name=>seedEx(name,2))}));
     save();closeModal();renderAll();toast(`Added ${arr.length} template${arr.length>1?'s':''}`);
   }catch(e){$('#aiOut').textContent=aiErrorMessage(e);b.textContent='Generate'}
 };
@@ -550,6 +604,8 @@ window.aiTemplate=async()=>{
 const toggleUnits=()=>{S.units=S.units==='lbs'?'kg':'lbs';save();renderAll();toast(`Units: ${S.units}`)};
 $('#unitChip').onclick=toggleUnits;$('#unitChip2').onclick=toggleUnits;
 $('#aiCheckBtn').onclick=checkAIStatus;
+$('#histDate').onchange=renderHist;
+$('#histClear').onclick=()=>{$('#histDate').value='';renderHist()};
 $('#backupBtn').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));
@@ -575,7 +631,9 @@ $('#dupBtn').onclick=duplicateLast;
 $('#dailyCard').onclick=openChat;
 $('#chatClose').onclick=closeChat;
 $('#chatSend').onclick=sendChat;
-$('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+$('#chatIn').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,132)+'px'});
+$('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
+window.addEventListener('pagehide',()=>{if(active)persistActive()});
 window.startWorkout=startWorkout;
 load();
 checkAIStatus();

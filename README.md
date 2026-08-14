@@ -7,7 +7,9 @@
 ## 2. Enable AI features
 Vercel → your project → Settings → Environment Variables:
 - `OPENAI_API_KEY` = your OpenAI key
-Redeploy. The ✨ buttons (AI recap, AI template builder) now work.
+- Optional: `OPENAI_MODEL` = a Responses API model ID (defaults to `gpt-5.6-luna`)
+
+Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. The ✨ buttons (AI recap, AI template builder, daily briefing, and coach chat) will then work.
 
 ## 3. Install on iPhone
 Open your Vercel URL in **Safari** → Share → **Add to Home Screen**.

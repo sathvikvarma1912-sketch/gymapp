@@ -14,15 +14,15 @@
   --bg:#0B0E09; --card:#151B11; --card2:#1C2516; --line:#232E1D;
   --lime:#CDFB47; --lime-dim:#9BE425; --text:#F2F5EC; --muted:#8B9484;
   --danger:#FF6B57; --r:22px;
-  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%;min-height:100%;background:var(--bg)}
 body{background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
 h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select{font:inherit;color:inherit}
-#app{height:100%;display:flex;flex-direction:column}
+#app{height:100%;height:100dvh;display:flex;flex-direction:column}
 .screen{flex:1;overflow-y:auto;padding:calc(14px + var(--sat)) 18px 110px;display:none;-webkit-overflow-scrolling:touch}
 .screen.on{display:block;animation:fade .25s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -30,7 +30,7 @@ input,select{font:inherit;color:inherit}
 
 /* nav */
 #nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;
-  padding:10px 8px calc(10px + var(--sab));background:rgba(11,14,9,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:20}
+  padding:10px 8px max(10px,var(--sab));background:rgba(11,14,9,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:20}
 #nav button{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:11px;font-weight:600;min-width:64px;padding:4px 0;transition:color .2s}
 #nav button.on{color:var(--lime)}
 #nav svg{width:22px;height:22px}
@@ -166,7 +166,10 @@ input.txt:focus{border-color:var(--lime)}
   <div class="card row pressable" id="backupBtn"><div><b>Back up data</b><div class="muted">Download all data as JSON</div></div><span>↓</span></div>
   <div class="card row pressable" id="restoreBtn"><div><b>Restore data</b><div class="muted">Import a backup file</div></div><span>↑</span></div>
   <input type="file" id="restoreFile" accept=".json" hidden>
-  <div class="card"><b>AI features</b><div class="muted" style="margin-top:4px">Powered by your OpenAI key via the /api/ai endpoint on Vercel. If AI buttons show an error, the endpoint isn't deployed yet.</div></div>
+  <div class="card">
+    <div class="row"><div><b>AI features</b><div class="muted" id="aiStatus" style="margin-top:4px">Checking connection…</div></div><button class="chip" id="aiCheckBtn">Check</button></div>
+    <div class="muted" style="margin-top:10px">The OpenAI key stays in the server-side /api/ai endpoint on Vercel.</div>
+  </div>
 </section>
 </div>
 
@@ -290,7 +293,7 @@ async function sendChat(){
     wait.textContent=await askAI(`${convo}\nUser: ${t}`,
       `You are a friendly, knowledgeable lifting coach chatting with ${S.name}. Keep replies short and conversational. Use their workout data below only when relevant to what they ask.\n\n${workoutContext()}`);
     chatLog[chatLog.length-1].txt=wait.textContent;
-  }catch(_){wait.textContent='I need the AI endpoint to chat — deploy to Vercel with your OpenAI key and I\'ll be right here.'}
+  }catch(e){wait.textContent=aiErrorMessage(e)}
 }
 
 const save=()=>idb.set(S);
@@ -484,10 +487,35 @@ $('#newTplBtn').onclick=()=>{
 
 /* ---------- AI layer ---------- */
 async function askAI(prompt,sys){
-  const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({prompt,system:sys})});
-  if(!r.ok)throw new Error('endpoint');
-  const d=await r.json();return d.text;
+  let r;
+  try{
+    r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt,system:sys})});
+  }catch(_){throw new Error('Could not reach the AI endpoint. Check your connection and deployment.')}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||(
+    r.status===404?'The AI endpoint is missing from this deployment.':'The AI request failed.'));
+  if(typeof d.text!=='string'||!d.text.trim())throw new Error('The AI service returned an empty response.');
+  return d.text.trim();
+}
+function aiErrorMessage(error){return error?.message||'The AI request failed. Please try again.'}
+async function checkAIStatus(){
+  const status=$('#aiStatus'),button=$('#aiCheckBtn');
+  status.textContent='Checking connection…';button.disabled=true;
+  try{
+    const r=await fetch('/api/ai',{cache:'no-store'});
+    const d=await r.json().catch(()=>null);
+    if(!r.ok||!d?.ok)throw new Error();
+    if(!d.configured)status.textContent='Add OPENAI_API_KEY in Vercel, then redeploy';
+    else if(d.ready)status.textContent='Connected and ready';
+    else if(d.reason==='invalid_key')status.textContent='OpenAI rejected the API key — replace it in Vercel';
+    else if(d.reason==='model_unavailable')status.textContent='API key or model check failed — check Vercel logs';
+    else status.textContent='OpenAI is unreachable right now — try again';
+    status.style.color=d.ready?'var(--lime)':'var(--danger)';
+  }catch(_){
+    status.textContent='AI endpoint missing — redeploy the full project to Vercel';
+    status.style.color='var(--danger)';
+  }finally{button.disabled=false}
 }
 window.aiSummary=async id=>{
   const s=S.sessions.find(x=>x.id===id);const b=$('#aiSumBtn'),out=$('#aiOut');
@@ -497,7 +525,7 @@ window.aiSummary=async id=>{
     out.textContent=await askAI(
       `Today's workout:\n${exportText(s)}\n\nPrevious ${s.name} session:\n${hist?exportText(hist):'none'}`,
       'You are a concise lifting coach. In 3-4 sentences, recap this workout: call out progress vs the previous session, total volume, and one focus for next time. Plain text.');
-  }catch(_){out.textContent='AI endpoint not reachable. Deploy /api/ai on Vercel with your OpenAI key (see README).'}
+  }catch(e){out.textContent=aiErrorMessage(e)}
   b.innerHTML='✨ AI recap';
 };
 $('#aiTplBtn').onclick=()=>{
@@ -515,12 +543,13 @@ window.aiTemplate=async()=>{
     const arr=JSON.parse(txt.replace(/```json|```/g,'').trim());
     arr.forEach(t=>S.templates.push({id:uid(),name:t.name,icon:'✨',exercises:t.exercises.map(seedEx)}));
     save();closeModal();renderAll();toast(`Added ${arr.length} template${arr.length>1?'s':''}`);
-  }catch(_){$('#aiOut').textContent='AI endpoint not reachable. Deploy /api/ai on Vercel with your OpenAI key (see README).';b.textContent='Generate'}
+  }catch(e){$('#aiOut').textContent=aiErrorMessage(e);b.textContent='Generate'}
 };
 
 /* ---------- profile ---------- */
 const toggleUnits=()=>{S.units=S.units==='lbs'?'kg':'lbs';save();renderAll();toast(`Units: ${S.units}`)};
 $('#unitChip').onclick=toggleUnits;$('#unitChip2').onclick=toggleUnits;
+$('#aiCheckBtn').onclick=checkAIStatus;
 $('#backupBtn').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));
@@ -549,6 +578,7 @@ $('#chatSend').onclick=sendChat;
 $('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
 window.startWorkout=startWorkout;
 load();
+checkAIStatus();
 </script>
 </body>
 </html>

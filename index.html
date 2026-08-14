@@ -390,7 +390,7 @@ let S=initialState();
 let active=null,tick=null;
 const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:'',googleClientId:'',googleReady:false};
 let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],year:[],all:[]}};
-let leaderMode='days',leaderRange='week';
+let leaderMode='volume',leaderRange='all';
 let friendSearch={term:'',results:[],busy:false,error:'',timer:null};
 let storageKey='',appUserId='',appLoaded=false;
 
@@ -800,7 +800,8 @@ const overviewFor=s=>({
   id:s.id,user_id:cloud.user.id,workout_name:s.name||'Workout',started_at:new Date(s.start).toISOString(),
   duration_ms:sessionDuration(s),exercise_count:s.entries.length,
   total_sets:s.entries.reduce((n,e)=>n+e.sets.length,0),total_volume:vol(s),
-  workout_date:localDateKey(s.start),units:s.units||S.units
+  workout_date:localDateKey(s.start),units:s.units||S.units,
+  exercise_names:s.entries.map(e=>e.name).filter(Boolean)
 });
 
 function mergeCloudState(remote){
@@ -981,8 +982,8 @@ window.sendFriendRequest=async id=>{
 };
 window.acceptFriend=async id=>{const {error}=await cloud.client.from('friendships').update({status:'accepted',updated_at:new Date().toISOString()}).eq('id',id);if(error)toast(error.message);else{toast('Friend added');await refreshSocial()}};
 window.removeFriend=async id=>{if(!confirm('Remove this friend or request?'))return;const {error}=await cloud.client.from('friendships').delete().eq('id',id);if(error)toast(error.message);else await refreshSocial()};
-window.setLeaderMode=mode=>{leaderMode=['days','volume'].includes(mode)?mode:'days';renderFriends()};
-window.setLeaderRange=range=>{leaderRange=['week','month','year','all'].includes(range)?range:'week';renderFriends()};
+window.setLeaderMode=mode=>{leaderMode=['days','volume'].includes(mode)?mode:'volume';renderFriends()};
+window.setLeaderRange=range=>{leaderRange=['week','month','year','all'].includes(range)?range:'all';renderFriends()};
 
 function friendRelationship(id){
   const link=social.friendships.find(x=>x.requester_id===id||x.addressee_id===id);
@@ -1018,16 +1019,13 @@ async function refreshSocial(){
   try{
     const {data:links,error}=await cloud.client.from('friendships').select('id,requester_id,addressee_id,status,created_at').order('created_at',{ascending:false});if(error)throw error;
     const ids=[cloud.user.id,...new Set((links||[]).flatMap(x=>[x.requester_id,x.addressee_id]))];
-    const sunday=new Date();sunday.setDate(sunday.getDate()-sunday.getDay());sunday.setHours(0,0,0,0);
-    const month=new Date();month.setDate(1);month.setHours(0,0,0,0);
-    const year=new Date();year.setMonth(0,1);year.setHours(0,0,0,0);
     const [peopleResult,workoutsResult,weekResult,monthResult,yearResult,allResult]=await Promise.all([
       cloud.client.from('profiles').select('id,display_name,friend_code').in('id',ids),
-      cloud.client.from('workout_overviews').select('id,user_id,workout_name,started_at,duration_ms,exercise_count,total_sets,units').order('started_at',{ascending:false}).limit(20),
-      cloud.client.rpc('friend_leaderboard',{range_start:sunday.toISOString()}),
-      cloud.client.rpc('friend_leaderboard',{range_start:month.toISOString()}),
-      cloud.client.rpc('friend_leaderboard',{range_start:year.toISOString()}),
-      cloud.client.rpc('friend_leaderboard',{range_start:null})
+      cloud.client.from('workout_overviews').select('id,user_id,workout_name,started_at,duration_ms,exercise_count,total_sets,units,exercise_names').order('started_at',{ascending:false}).limit(20),
+      cloud.client.rpc('global_leaderboard',{leader_period:'week'}),
+      cloud.client.rpc('global_leaderboard',{leader_period:'month'}),
+      cloud.client.rpc('global_leaderboard',{leader_period:'year'}),
+      cloud.client.rpc('global_leaderboard',{leader_period:'all'})
     ]);
     const failed=[peopleResult,workoutsResult,weekResult,monthResult,yearResult,allResult].find(x=>x.error);if(failed)throw failed.error;
     social={friendships:links||[],profiles:new Map((peopleResult.data||[]).map(x=>[x.id,x])),overviews:workoutsResult.data||[],
@@ -1050,14 +1048,13 @@ function renderFriends(){
   const root=$('#friendsContent');if(!root)return;renderCloudStatus();
   $('#friendsRefresh').style.display=cloud.user?'inline-flex':'none';
   if(!cloud.configured){root.innerHTML=`<div class="card"><h2 style="font-size:19px">Cloud setup needed</h2><div class="muted" style="margin-top:6px">Your workouts are still saved on this device. Add <b>SUPABASE_URL</b> and <b>SUPABASE_PUBLISHABLE_KEY</b> in Vercel after running the included database schema.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}</div>`;return}
-  if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}<input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Friends see workout overview and volume totals only — never your exercises, individual weights or reps.</div></div>`;return}
+  if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}<input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Everyone sees aggregate leaderboard totals. Accepted friends can also see workout and exercise names — never individual weights or reps.</div></div>`;return}
   if(!cloud.profile){root.innerHTML=`<div class="card muted">Connecting your profile…${cloud.error?`<div style="color:var(--danger);margin-top:8px">${esc(cloud.error)}</div>`:''}</div>`;return}
   const received=social.friendships.filter(x=>x.status==='pending'&&x.addressee_id===cloud.user.id);
   const sent=social.friendships.filter(x=>x.status==='pending'&&x.requester_id===cloud.user.id);
   const accepted=social.friendships.filter(x=>x.status==='accepted');
   const allowed=new Set([cloud.user.id,...accepted.map(x=>x.requester_id===cloud.user.id?x.addressee_id:x.requester_id)]);
-  const stats=new Map((social.leaderboards[leaderRange]||[]).map(x=>[x.user_id,x]));
-  const board=[...allowed].map(id=>{const x=stats.get(id)||{};return{id,name:friendName(id),days:Number(x.workout_days)||0,workouts:Number(x.workout_count)||0,sets:Number(x.total_sets)||0,volumeKg:Number(x.total_volume_kg)||0}})
+  const board=(social.leaderboards[leaderRange]||[]).map(x=>({id:x.user_id,name:x.display_name||friendName(x.user_id),days:Number(x.workout_days)||0,workouts:Number(x.workout_count)||0,sets:Number(x.total_sets)||0,volumeKg:Number(x.total_volume_kg)||0}))
     .sort((a,b)=>leaderMode==='volume'?(b.volumeKg-a.volumeKg||b.days-a.days||a.name.localeCompare(b.name)):(b.days-a.days||b.volumeKg-a.volumeKg||a.name.localeCompare(b.name)));
   const recent=social.overviews.filter(x=>allowed.has(x.user_id)).slice(0,20);
   const displayVolume=kg=>Math.round(S.units==='lbs'?kg*2.2046226218:kg).toLocaleString();
@@ -1069,7 +1066,7 @@ function renderFriends(){
     <div class="card leaderboard-card">
       <div class="leaderboard-head">
         <div class="leaderboard-title">${rangeTitle} leaders</div>
-        <div class="leaderboard-sub">You and ${accepted.length} friend${accepted.length===1?'':'s'} · ranked by ${metricTitle}</div>
+        <div class="leaderboard-sub">All ${board.length} RepNet athlete${board.length===1?'':'s'} · ranked by ${metricTitle}</div>
         <div class="leader-toolbar">
           <label class="leader-filter"><span>Period</span><select class="leader-select" onchange="setLeaderRange(this.value)">
             <option value="week" ${leaderRange==='week'?'selected':''}>This week</option><option value="month" ${leaderRange==='month'?'selected':''}>This month</option><option value="year" ${leaderRange==='year'?'selected':''}>This year</option><option value="all" ${leaderRange==='all'?'selected':''}>All time</option>
@@ -1087,9 +1084,9 @@ function renderFriends(){
     <div class="eyebrow" style="margin:18px 2px 9px">Friends</div>
     <div class="card social-list">${accepted.length?accepted.map(x=>{const other=x.requester_id===cloud.user.id?x.addressee_id:x.requester_id;return`<div class="row"><div style="display:flex;align-items:center;gap:10px;min-width:0"><div class="friend-avatar">${esc(profileInitials(friendName(other)))}</div><div><b>${esc(friendName(other))}</b><div class="muted">Overview sharing on</div></div></div><button class="chip" onclick="removeFriend(${x.id})">Remove</button></div>`}).join(''):'<div class="muted">No friends yet. Search by name above.</div>'}${sent.map(x=>`<div class="row"><div><b>${esc(friendName(x.addressee_id))}</b><div class="muted">Request pending</div></div><button class="chip" onclick="removeFriend(${x.id})">Cancel</button></div>`).join('')}</div>
     <div class="eyebrow" style="margin:18px 2px 9px">Recent activity</div>
-    <div class="card social-list">${recent.length?recent.map(x=>`<div><div class="row"><b>${esc(friendName(x.user_id))}</b><span class="muted">${new Date(x.started_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div style="margin-top:3px">${esc(x.workout_name)}</div><div class="muted">${fmtDur(x.duration_ms)} · ${x.exercise_count} exercises · ${x.total_sets} sets</div></div>`).join(''):'<div class="muted">No workouts shared yet.</div>'}</div>
+    <div class="card social-list">${recent.length?recent.map(x=>`<div><div class="row"><b>${esc(friendName(x.user_id))}</b><span class="muted">${new Date(x.started_at).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span></div><div style="margin-top:3px">${esc(x.workout_name)}</div><div class="muted">${fmtDur(x.duration_ms)} · ${x.exercise_count} exercises · ${x.total_sets} sets</div>${Array.isArray(x.exercise_names)&&x.exercise_names.length?`<div class="muted" style="margin-top:5px">${x.exercise_names.map(esc).join(' · ')}</div>`:''}</div>`).join(''):'<div class="muted">No workouts shared yet.</div>'}</div>
     <div class="card"><div class="muted"><span class="status-dot ${cloud.error?'':'on'}"></span>${cloud.error?esc(cloud.error):'Private data synced'} · ${esc(cloud.user.email||'')}</div></div>
-    <div class="card ai"><b>Overview only</b><div class="muted" style="margin-top:5px">Volume totals are shared for rankings. Exercise names, individual weights and reps stay private.</div></div>
+    <div class="card ai"><b>Privacy by relationship</b><div class="muted" style="margin-top:5px">All users appear in aggregate rankings. Only accepted friends can see workout and exercise names; individual weights and reps stay private.</div></div>
     <button class="btn ghost" onclick="cloudSignOut()">Sign out</button>`;
   renderFriendSearchResults();
 }

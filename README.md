@@ -38,6 +38,6 @@ It launches full-screen like a native app.
 ## Notes
 - Login is required. Google is the primary sign-in method and secure email links are the fallback.
 - Data is saved per authenticated user on-device first (IndexedDB), so workouts still work offline after sign-in. Private data is also synced to Supabase.
-- Friends can see workout overviews and aggregate volume for weekly, monthly, and all-time rankings. Exercise names, individual weights, and reps remain private.
+- Every signed-in user appears in the weekly, monthly, yearly, and all-time aggregate leaderboard. Accepted friends can also see workout and exercise names; individual weights and reps remain private.
 - Use Profile → Back up data for a portable JSON export.
 - After finishing a workout, tap **Copy for Google Health** to grab the summary (exercises, sets, weights, start/end time, duration) and paste it into Google Health.

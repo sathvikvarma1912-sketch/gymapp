@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RepNet">
+<meta name="application-name" content="RepNet">
 <meta name="theme-color" content="#0B0E09">
-<title>BrawlBros</title>
+<title>RepNet</title>
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -24,6 +27,25 @@ h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit}
 #app{height:100%;height:100dvh;display:flex;flex-direction:column}
+body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-locked #chat,body.auth-locked #modal{visibility:hidden}
+#authGate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:calc(28px + var(--sat)) 22px calc(28px + var(--sab));background:
+  radial-gradient(circle at 80% 13%,rgba(205,251,71,.15),transparent 30%),linear-gradient(165deg,#11170e 0%,var(--bg) 52%)}
+#authGate.hidden{display:none}
+.auth-shell{width:100%;max-width:430px}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.auth-mark{width:48px;height:48px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:var(--lime);color:var(--bg);font-family:"Space Grotesk",sans-serif;font-size:20px;font-weight:800;box-shadow:0 10px 30px rgba(205,251,71,.2)}
+.auth-brand-name{font-family:"Space Grotesk",sans-serif;font-size:23px;font-weight:700;letter-spacing:-.02em}
+.auth-panel{background:rgba(21,27,17,.92);border:1px solid rgba(205,251,71,.18);border-radius:30px;padding:25px 20px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.auth-panel h1{font-size:32px;line-height:1.08;letter-spacing:-.025em}
+.auth-copy{color:var(--muted);font-size:14px;line-height:1.55;margin:9px 0 21px}
+.auth-google{background:#fff;color:#202124;border-radius:16px;padding:14px;font-weight:700}
+.auth-google-mark{font-family:Arial,sans-serif;font-size:19px;font-weight:800;color:#4285f4}
+.auth-divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin:18px 0 10px}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;background:var(--line);flex:1}
+.auth-note{color:var(--muted);font-size:11px;line-height:1.5;text-align:center;margin-top:16px}
+#authError{display:none;color:var(--danger);font-size:12px;line-height:1.45;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:rgba(255,107,87,.08);border:1px solid rgba(255,107,87,.2)}
+#authError.show{display:block}
+#authError.success{color:var(--lime);background:rgba(205,251,71,.07);border-color:rgba(205,251,71,.2)}
 .screen{flex:1;overflow-y:auto;padding:calc(14px + var(--sat)) 18px 110px;display:none;-webkit-overflow-scrolling:touch}
 .screen.on{display:block;animation:fade .25s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -160,7 +182,23 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 @media(max-width:390px){#nav button{min-width:54px;font-size:10px}#nav{padding-left:2px;padding-right:2px}}
 </style>
 </head>
-<body>
+<body class="auth-locked">
+<div id="authGate">
+  <div class="auth-shell">
+    <div class="auth-brand"><div class="auth-mark">RN</div><div><div class="auth-brand-name">RepNet</div><div class="muted">Train. Track. Progress together.</div></div></div>
+    <div class="auth-panel">
+      <div class="eyebrow" style="color:var(--lime)">Your training network</div>
+      <h1>Build strength.<br>Stay accountable.</h1>
+      <div class="auth-copy">Sign in to access your workouts, private cloud backup, friends and leaderboards.</div>
+      <div id="authError" role="alert"></div>
+      <button class="btn auth-google pressable" id="authGoogle" onclick="cloudGoogleSignIn()"><span class="auth-google-mark">G</span> Continue with Google</button>
+      <div class="auth-divider">or use email</div>
+      <input class="txt" id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+      <button class="btn ghost pressable" id="authEmailButton" style="margin-top:10px" onclick="cloudSignIn()">Email me a secure link</button>
+      <div class="auth-note">New here? Continuing creates your RepNet account. Existing users are signed back in.</div>
+    </div>
+  </div>
+</div>
 <div id="app">
 
 <!-- HOME -->
@@ -280,23 +318,23 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------- storage (IndexedDB with in-memory fallback) ---------- */
-let mem=null;
+const mem=new Map();
 const idb={
   open(){return new Promise(res=>{try{const q=indexedDB.open('brawlbros',1);
     q.onupgradeneeded=e=>e.target.result.createObjectStore('kv');
     q.onsuccess=e=>res(e.target.result);q.onerror=()=>res(null);}catch(_){res(null)}})},
-  async get(){const db=await this.open();if(!db)return mem;
-    return new Promise(res=>{const r=db.transaction('kv').objectStore('kv').get('state');
-      r.onsuccess=()=>res(r.result||mem);r.onerror=()=>res(mem)})},
-  async set(v){mem=v;const db=await this.open();if(!db)return;
-    db.transaction('kv','readwrite').objectStore('kv').put(v,'state')}
+  async get(key='state'){const db=await this.open();if(!db)return mem.get(key)||null;
+    return new Promise(res=>{const r=db.transaction('kv').objectStore('kv').get(key);
+      r.onsuccess=()=>res(r.result??mem.get(key)??null);r.onerror=()=>res(mem.get(key)||null)})},
+  async set(v,key='state'){mem.set(key,v);const db=await this.open();if(!db)return;
+    db.transaction('kv','readwrite').objectStore('kv').put(v,key)}
 };
 
 /* ---------- state ---------- */
 const uid=()=>Math.random().toString(36).slice(2,9);
 const seedEx=(n,s,reps='')=>({id:uid(),name:n,sets:s||2,reps});
 const mk=a=>a.map(x=>seedEx(x[0],x[1]));
-let S={
+const initialState=()=>({
   ver:2,
   units:'lbs',
   templates:[
@@ -307,20 +345,33 @@ let S={
     {id:uid(),name:'Legs',icon:'🦍',exercises:mk([['Smith machine squat',2],['RDL',2],['Leg press',2],['Hamstring Curls',2],['Adduction',2],['Abduction',2],['Decline ab crunch',2],['Leg raises',2],['Standing calves',2]])}
   ],
   sessions:[]
-};
+});
+let S=initialState();
 let active=null,tick=null;
 const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:''};
 let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],all:[]}};
 let leaderMode='days',leaderRange='week';
+let storageKey='',appUserId='',appLoaded=false;
 
-async function load(){const v=await idb.get();if(v&&v.ver===S.ver)S=v;else save();
+async function load(user){
+  storageKey=`state:${user.id}`;
+  let v=await idb.get(storageKey);
+  if(!v){
+    const [legacy,legacyOwner]=await Promise.all([idb.get('state'),idb.get('legacy-owner')]);
+    if(legacy?.ver===2&&(!legacyOwner||legacyOwner===user.id)){
+      v=legacy;if(!legacyOwner)await idb.set(user.id,'legacy-owner');
+    }
+  }
+  S=v?.ver===2?v:initialState();
+  if(!S.name){S.name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||''}
+  await idb.set(S,storageKey);
   active=S.activeWorkout||null;renderAll();
   if(active){$('#wkName').textContent=active.name;openSheet();renderActive();startTimer()}
   if(!S.name)askName();else dailyBrief();}
 
 /* ---------- onboarding ---------- */
 function askName(){
-  modal(`<h2 style="font-size:24px">Welcome to BrawlBros 👋</h2>
+  modal(`<h2 style="font-size:24px">Welcome to RepNet 👋</h2>
     <div class="muted" style="margin-top:4px">What should your coach call you?</div>
     <input class="txt" id="nameIn" placeholder="Your name" style="margin-top:14px">
     <button class="btn" style="margin-top:14px" onclick="saveName()">Let's lift</button>`);
@@ -392,7 +443,7 @@ async function sendChat(){
   }catch(e){wait.textContent=aiErrorMessage(e);chatLog[chatLog.length-1].txt=wait.textContent}
 }
 
-const save=()=>{idb.set(S);scheduleCloudSync()};
+const save=()=>{if(storageKey)idb.set(S,storageKey);scheduleCloudSync()};
 
 /* ---------- helpers ---------- */
 const $=q=>document.querySelector(q);
@@ -765,7 +816,7 @@ async function ensureCloudProfile(){
 async function pullCloudState(){
   const {data,error}=await cloud.client.from('user_states').select('state').eq('user_id',cloud.user.id).maybeSingle();
   if(error)throw error;
-  if(data?.state){mergeCloudState(data.state);active=S.activeWorkout||active;await idb.set(S);renderAll();dailyBrief()}
+  if(data?.state){mergeCloudState(data.state);active=S.activeWorkout||active;await idb.set(S,storageKey);renderAll();dailyBrief()}
   await pushCloudState();
 }
 
@@ -776,10 +827,30 @@ async function onCloudSignedIn(){
   catch(e){cloud.lastUserId=null;cloud.error=e.message||'Could not load cloud data';renderFriends()}
 }
 
+function showAuthMessage(message='',type='error'){
+  const el=$('#authError');el.textContent=message;el.classList.toggle('show',!!message);el.classList.toggle('success',type==='success');
+}
+function lockApp(message=''){
+  document.body.classList.add('auth-locked');$('#authGate').classList.remove('hidden');showAuthMessage(message);
+}
+function unlockApp(){showAuthMessage('');$('#authGate').classList.add('hidden');document.body.classList.remove('auth-locked')}
+function resetCloudUser(message=''){
+  cloud.user=null;cloud.profile=null;cloud.lastUserId=null;appUserId='';appLoaded=false;storageKey='';
+  social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],all:[]}};
+  clearInterval(tick);active=null;$('#sheet').classList.remove('open');$('#sheet').style.display='none';$('#chat').classList.remove('open');$('#modal').classList.remove('open');
+  lockApp(message);renderFriends();
+}
+async function activateCloudUser(user){
+  cloud.user=user;
+  if(appUserId===user.id&&!appLoaded)return;
+  if(appUserId!==user.id){appUserId=user.id;appLoaded=false;cloud.lastUserId=null;await load(user);appLoaded=true}
+  unlockApp();await onCloudSignedIn();
+}
+
 async function initCloud(){
   try{
     const r=await fetch('/api/config',{cache:'no-store'}),cfg=await r.json();
-    if(!cfg.supabaseUrl||!cfg.supabaseKey){cloud.error='Supabase is not configured yet';renderFriends();return}
+    if(!cfg.supabaseUrl||!cfg.supabaseKey)throw new Error('RepNet authentication is not configured yet');
     if(!window.supabase?.createClient)throw new Error('Cloud library could not load');
     cloud.configured=true;
     const localHost=['localhost','127.0.0.1'].includes(location.hostname);
@@ -787,31 +858,40 @@ async function initCloud(){
     // This is a client-only PWA using Supabase's default magic-link template.
     // Implicit flow lets the browser receive the session directly from that link.
     cloud.client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
-    const {data:{session}}=await cloud.client.auth.getSession();cloud.user=session?.user||null;renderFriends();
+    const {data:{session},error:sessionError}=await cloud.client.auth.getSession();if(sessionError)throw sessionError;
     const authParams=new URLSearchParams(location.search);
     const authHash=new URLSearchParams(location.hash.replace(/^#/,''));
     const callbackError=authParams.get('error_description')||authHash.get('error_description');
-    if(callbackError){cloud.error=callbackError.replace(/\+/g,' ');history.replaceState({},'',location.pathname);renderFriends()}
+    if(callbackError){history.replaceState({},'',location.pathname);resetCloudUser(callbackError.replace(/\+/g,' '))}
     else if(location.hash||authParams.has('code'))history.replaceState({},'',location.pathname);
-    if(cloud.user)await onCloudSignedIn();
-    cloud.client.auth.onAuthStateChange((_event,next)=>{
-      cloud.user=next?.user||null;if(!cloud.user){cloud.profile=null;cloud.lastUserId=null;social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],all:[]}};renderFriends();return}
-      setTimeout(onCloudSignedIn,0);
-    });
-  }catch(e){cloud.error=e.message||'Cloud sync unavailable';renderFriends()}
+    if(session?.user)await activateCloudUser(session.user);else if(!callbackError)resetCloudUser();
+    cloud.client.auth.onAuthStateChange((_event,next)=>setTimeout(()=>{
+      if(next?.user)activateCloudUser(next.user).catch(e=>resetCloudUser(e.message||'Could not open your account'));
+      else resetCloudUser();
+    },0));
+  }catch(e){cloud.error=e.message||'Authentication unavailable';lockApp(cloud.error)}
 }
 
 window.cloudSignIn=async()=>{
-  const email=$('#syncEmail')?.value.trim();if(!email)return toast('Enter your email');
-  const button=$('#syncSignIn');button.disabled=true;button.textContent='Sending…';
+  const input=$('#authEmail')||$('#syncEmail'),email=input?.value.trim();if(!email)return showAuthMessage('Enter your email address');
+  if(!cloud.client)return showAuthMessage('Authentication is still connecting. Try again in a moment.');
+  const button=$('#authEmailButton')||$('#syncSignIn'),label=button.textContent;button.disabled=true;button.textContent='Sending…';
   try{
     const {error}=await cloud.client.auth.signInWithOtp({email,options:{emailRedirectTo:cloud.redirectUrl}});
     if(error)throw error;
-    cloud.error='';toast('Check your email for a new sign-in link');
-  }catch(e){cloud.error=e.message||'Could not send the sign-in link';toast(cloud.error);renderFriends()}
-  finally{if(button?.isConnected){button.disabled=false;button.textContent='Email me a sign-in link'}}
+    cloud.error='';showAuthMessage('Check your email and open the newest RepNet sign-in link.','success');
+  }catch(e){cloud.error=e.message||'Could not send the sign-in link';showAuthMessage(cloud.error);renderFriends()}
+  finally{if(button?.isConnected){button.disabled=false;button.textContent=label}}
 };
-window.cloudSignOut=async()=>{await cloud.client.auth.signOut();toast('Signed out — local data stays here')};
+window.cloudGoogleSignIn=async()=>{
+  if(!cloud.client)return showAuthMessage('Authentication is still connecting. Try again in a moment.');
+  const button=$('#authGoogle');button.disabled=true;showAuthMessage('');
+  try{
+    const {error}=await cloud.client.auth.signInWithOAuth({provider:'google',options:{redirectTo:cloud.redirectUrl,queryParams:{prompt:'select_account'}}});
+    if(error)throw error;
+  }catch(e){button.disabled=false;showAuthMessage(e.message||'Google sign-in could not start')}
+};
+window.cloudSignOut=async()=>{const {error}=await cloud.client.auth.signOut();if(error)return toast(error.message);resetCloudUser();toast('Signed out securely')};
 window.copyFriendCode=async()=>{await navigator.clipboard.writeText(cloud.profile.friend_code);toast('Friend code copied')};
 window.sendFriendRequest=async()=>{
   const code=$('#friendCodeIn').value.trim().toUpperCase();if(!code)return;
@@ -852,7 +932,7 @@ async function refreshSocial(){
 function renderCloudStatus(){
   const el=$('#cloudStatus');if(!el)return;
   if(!cloud.configured)el.textContent='Not configured';
-  else if(!cloud.user)el.textContent='Local only — sign in from Friends';
+  else if(!cloud.user)el.textContent='Sign in required';
   else if(cloud.syncing)el.textContent='Syncing…';
   else if(cloud.error)el.textContent='Sync needs attention';
   else el.textContent='Synced and backed up';
@@ -904,7 +984,7 @@ $('#dateLine').onclick=()=>openHistoryDate(Date.now());
 $('#backupBtn').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));
-  a.download=`brawlbros-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  a.download=`repnet-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
 };
 $('#restoreBtn').onclick=()=>$('#restoreFile').click();
 $('#restoreFile').onchange=e=>{
@@ -934,7 +1014,7 @@ $('#chatIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.p
 window.addEventListener('pagehide',()=>{if(active)persistActive()});
 window.addEventListener('online',scheduleCloudSync);
 window.startWorkout=startWorkout;
-load().then(initCloud);
+initCloud();
 checkAIStatus();
 </script>
 </body>

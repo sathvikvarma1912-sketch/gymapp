@@ -29,6 +29,8 @@ create unique index if not exists friendships_unique_pair
   on public.friendships (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
 create index if not exists friendships_requester_status on public.friendships (requester_id, status);
 create index if not exists friendships_addressee_status on public.friendships (addressee_id, status);
+create index if not exists profiles_display_name_lower_pattern
+  on public.profiles (lower(display_name) text_pattern_ops);
 
 create table if not exists public.workout_overviews (
   id text primary key,
@@ -168,6 +170,30 @@ $$;
 revoke all on function public.find_profile_by_friend_code(text) from public;
 revoke all on function public.find_profile_by_friend_code(text) from anon;
 grant execute on function public.find_profile_by_friend_code(text) to authenticated;
+
+create or replace function public.search_profiles_by_name(search_term text)
+returns table (id uuid, display_name text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.display_name
+  from public.profiles p
+  where (select auth.uid()) is not null
+    and p.id <> (select auth.uid())
+    and char_length(btrim(search_term)) between 2 and 80
+    and btrim(search_term) !~ '[%_]'
+    and lower(p.display_name) like lower(btrim(search_term)) || '%'
+  order by
+    case when lower(p.display_name) = lower(btrim(search_term)) then 0 else 1 end,
+    lower(p.display_name),
+    p.id
+  limit 10;
+$$;
+revoke all on function public.search_profiles_by_name(text) from public;
+revoke all on function public.search_profiles_by_name(text) from anon;
+grant execute on function public.search_profiles_by_name(text) to authenticated;
 
 create or replace function public.make_profile_for_new_user()
 returns trigger

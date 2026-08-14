@@ -106,6 +106,21 @@ input,select,textarea{font:inherit;color:inherit}
 .msg.me{background:var(--lime);color:#0B0E09;margin-left:auto;border-bottom-right-radius:6px;font-weight:600}
 .msg.bot{background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:6px}
 
+/* home workout recap */
+#dailyCard{position:relative;overflow:hidden;padding:0;background:linear-gradient(145deg,#182112 0%,#11170e 68%);border-color:rgba(205,251,71,.28);box-shadow:0 14px 38px rgba(0,0,0,.2)}
+#dailyCard::after{content:"";position:absolute;width:150px;height:150px;right:-75px;top:-80px;border-radius:50%;background:var(--lime);opacity:.09;filter:blur(4px);pointer-events:none}
+.recap-head{padding:15px 16px 13px;border-bottom:1px solid rgba(205,251,71,.13)}
+.recap-icon{width:38px;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--lime);color:var(--bg);font-size:18px;box-shadow:0 7px 20px rgba(205,251,71,.18);flex:none}
+.recap-title{font-family:"Space Grotesk",Inter,sans-serif;font-size:17px;font-weight:700;line-height:1.2}
+.recap-chat{color:var(--lime);font-size:12px;font-weight:700;white-space:nowrap}
+#dailyMeta{margin-top:3px;color:var(--muted);font-size:11px}
+.recap-body{padding:15px 16px 16px}
+#dailyTxt{color:var(--text);font-size:14px;line-height:1.55}
+.recap-next{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--lime);font-weight:700;margin:15px 0 8px}
+.recap-tip{display:grid;grid-template-columns:25px 1fr;gap:9px;align-items:start;padding:9px 10px;background:rgba(205,251,71,.055);border:1px solid rgba(205,251,71,.12);border-radius:13px;color:#dfe6d8;font-size:12px;line-height:1.45}
+.recap-tip+.recap-tip{margin-top:7px}
+.recap-num{width:22px;height:22px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(205,251,71,.15);color:var(--lime);font-weight:800;font-size:11px}
+
 /* modal */
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:none;align-items:flex-end;justify-content:center}
 #modal.open{display:flex}
@@ -150,8 +165,11 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
   </div>
   <div id="week"></div>
   <div class="card ai pressable" id="dailyCard" style="margin-bottom:14px">
-    <div class="row"><b id="dailyHi">☀️ Good morning</b><span class="muted">Chat →</span></div>
-    <div class="muted" id="dailyTxt" style="margin-top:6px">Your coach's daily briefing appears here.</div>
+    <div class="recap-head row">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0"><div class="recap-icon">✦</div><div style="min-width:0"><div class="eyebrow" style="margin:0 0 2px;color:var(--lime)">AI workout recap</div><div class="recap-title" id="dailyHi">Last workout</div><div id="dailyMeta"></div></div></div>
+      <span class="recap-chat">Ask coach →</span>
+    </div>
+    <div class="recap-body"><div id="dailyTxt">Analyzing your latest workout…</div><div id="dailyTips"></div></div>
   </div>
   <button class="btn pressable" id="dupBtn" style="margin-bottom:12px">⚡ Duplicate last workout</button>
   <div class="eyebrow" style="margin:18px 0 10px">Start a workout</div>
@@ -297,23 +315,46 @@ function askName(){
 }
 window.saveName=()=>{S.name=($('#nameIn').value.trim()||'Lifter');save();closeModal();renderAll();dailyBrief();};
 
-/* ---------- daily AI briefing ---------- */
-function greet(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
+/* ---------- latest workout AI recap ---------- */
+let homeRecapRequestId=null;
 function workoutContext(){
   const recent=[...S.sessions].sort((a,b)=>b.start-a.start).slice(0,10)
     .map(s=>`${s.name} on ${new Date(s.start).toLocaleDateString()} (${fmtDur(sessionDuration(s))}, ${vol(s).toLocaleString()} ${S.units}): `+
       s.entries.map(e=>`${e.name} ${e.sets.map(x=>`${x.w||0}x${x.r||0}`).join(',')}`).join('; ')).join('\n');
   return `User: ${S.name}. Units: ${S.units}. Split rotation: ${S.templates.map(t=>t.name).join(' → ')} (+ rest days).\nRecent workouts (newest first):\n${recent||'No workouts logged yet.'}`;
 }
+function renderHomeRecap(session,recap){
+  if(!session){
+    $('#dailyHi').textContent='No completed workout yet';$('#dailyMeta').textContent='Your first recap will appear here';
+    $('#dailyTxt').textContent='Finish a workout and your coach will summarize the session with two clear priorities for next time.';$('#dailyTips').innerHTML='';return;
+  }
+  const sets=session.entries.reduce((n,e)=>n+e.sets.length,0),units=session.units||S.units;
+  $('#dailyHi').textContent=session.name;
+  $('#dailyMeta').textContent=`${new Date(session.start).toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${fmtDur(sessionDuration(session))} · ${sets} sets · ${vol(session).toLocaleString()} ${units}`;
+  $('#dailyTxt').textContent=recap?.summary||'Reviewing your latest session…';
+  const tips=Array.isArray(recap?.suggestions)?recap.suggestions.slice(0,2):[];
+  $('#dailyTips').innerHTML=tips.length?`<div class="recap-next">For your next session</div>${tips.map((tip,i)=>`<div class="recap-tip"><span class="recap-num">${i+1}</span><span>${esc(tip)}</span></div>`).join('')}`:'';
+}
+function fallbackHomeRecap(session){
+  const sets=session.entries.reduce((n,e)=>n+e.sets.length,0),first=session.entries[0]?.name||'your first movement';
+  return {summary:`You completed ${session.entries.length} exercises and ${sets} working sets in ${fmtDur(sessionDuration(session))}, with ${vol(session).toLocaleString()} ${session.units||S.units} of total volume.`,suggestions:[`On ${first}, aim to add one clean rep before increasing the load.`,`Keep the same exercise order next time so your performance is easier to compare.`]};
+}
 async function dailyBrief(){
-  const today=new Date().toDateString();
-  $('#dailyHi').textContent=`☀️ ${greet()}, ${S.name}`;
-  if(S.daily&&S.daily.date===today){$('#dailyTxt').textContent=S.daily.text;return}
+  const last=[...S.sessions].sort((a,b)=>b.start-a.start)[0];
+  if(!last){renderHomeRecap(null);return}
+  if(S.homeRecap?.sessionId===last.id&&S.homeRecap.summary&&S.homeRecap.suggestions?.length===2){renderHomeRecap(last,S.homeRecap);return}
+  renderHomeRecap(last,null);
+  if(homeRecapRequestId===last.id)return;homeRecapRequestId=last.id;
   try{
-    const t=await askAI(workoutContext(),
-      `You are ${S.name}'s lifting coach. Write a 2-3 sentence morning briefing: greet briefly, note their recent consistency or progress, and say what's smart to train today given the rotation. Warm, punchy, plain text.`);
-    S.daily={date:today,text:t};save();$('#dailyTxt').textContent=t;
-  }catch(_){$('#dailyTxt').textContent='Tap to chat with your coach. (Daily briefings generate automatically once deployed with the AI endpoint.)'}
+    const details=`Workout: ${last.name}\nDate: ${new Date(last.start).toLocaleDateString()}\nDuration: ${fmtDur(sessionDuration(last))}\nTotal volume: ${vol(last)} ${last.units||S.units}\nExercises:\n${last.entries.map(e=>`- ${e.name}: ${e.sets.map(x=>`${x.w||0} ${last.units||S.units} x ${x.r||0}`).join(', ')}`).join('\n')}`;
+    const raw=await askAI(details,
+      `You are ${S.name}'s concise lifting coach. Analyze only the completed workout provided. Write one short, specific 1-2 sentence recap of what they did, then exactly two practical suggestions for repeating or progressing this workout next time. Do not greet the user, discuss today's split, or use markdown.`,
+      'home_recap');
+    const parsed=JSON.parse(raw);if(typeof parsed.summary!=='string'||typeof parsed.suggestion_one!=='string'||typeof parsed.suggestion_two!=='string')throw new Error('Invalid recap');
+    if([...S.sessions].sort((a,b)=>b.start-a.start)[0]?.id!==last.id)return;
+    S.homeRecap={sessionId:last.id,summary:parsed.summary.trim(),suggestions:[parsed.suggestion_one.trim(),parsed.suggestion_two.trim()]};save();renderHomeRecap(last,S.homeRecap);
+  }catch(_){renderHomeRecap(last,fallbackHomeRecap(last))}
+  finally{if(homeRecapRequestId===last.id)homeRecapRequestId=null}
 }
 
 /* ---------- chatbot ---------- */
@@ -512,7 +553,7 @@ $('#finishWk').onclick=()=>{
   const entries=active.entries.map(e=>({...e,sets:e.sets.filter(s=>s.w||s.r)})).filter(e=>e.sets.length);
   if(!entries.length){toast('Log at least one set');return}
   active.end=Date.now();active.durationMs=activeElapsed();active.pausedAt=null;active.units=active.units||S.units;active.entries=entries;
-  S.sessions.push(active);S.activeWorkout=null;const s=active;active=null;save();closeSheet();renderAll();showSummary(s);
+  S.sessions.push(active);S.activeWorkout=null;const s=active;active=null;save();closeSheet();renderAll();dailyBrief();showSummary(s);
 };
 
 /* ---------- summary + export ---------- */
@@ -542,7 +583,7 @@ window.viewSession=id=>{
     <textarea readonly id="sumTxt">${exportText(s)}</textarea>
     <button class="btn" onclick="copySum()">Copy summary</button>`);
 };
-window.delSession=id=>{if(!confirm('Delete this workout?'))return;S.sessions=S.sessions.filter(x=>x.id!==id);save();closeModal();renderAll()};
+window.delSession=id=>{if(!confirm('Delete this workout?'))return;S.sessions=S.sessions.filter(x=>x.id!==id);S.homeRecap=null;save();closeModal();renderAll();dailyBrief()};
 
 /* ---------- template editing ---------- */
 window.editTpl=id=>{
@@ -572,11 +613,11 @@ $('#newTplBtn').onclick=()=>{
 };
 
 /* ---------- AI layer ---------- */
-async function askAI(prompt,sys){
+async function askAI(prompt,sys,mode){
   let r;
   try{
     r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt,system:sys})});
+      body:JSON.stringify({prompt,system:sys,mode})});
   }catch(_){throw new Error('Could not reach the AI endpoint. Check your connection and deployment.')}
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||(
@@ -698,7 +739,7 @@ async function ensureCloudProfile(){
 async function pullCloudState(){
   const {data,error}=await cloud.client.from('user_states').select('state').eq('user_id',cloud.user.id).maybeSingle();
   if(error)throw error;
-  if(data?.state){mergeCloudState(data.state);active=S.activeWorkout||active;await idb.set(S);renderAll()}
+  if(data?.state){mergeCloudState(data.state);active=S.activeWorkout||active;await idb.set(S);renderAll();dailyBrief()}
   await pushCloudState();
 }
 
@@ -830,7 +871,7 @@ $('#backupBtn').onclick=()=>{
 $('#restoreBtn').onclick=()=>$('#restoreFile').click();
 $('#restoreFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{S=JSON.parse(r.result);save();renderAll();toast('Data restored')}catch(_){toast('Invalid backup file')}};
+  r.onload=()=>{try{S=JSON.parse(r.result);save();renderAll();dailyBrief();toast('Data restored')}catch(_){toast('Invalid backup file')}};
   r.readAsText(f);
 };
 

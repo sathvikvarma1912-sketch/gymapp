@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     return json(res, 405, { error: 'Method not allowed' });
   }
 
-  const { prompt, system } = req.body || {};
+  const { prompt, system, mode } = req.body || {};
   if (typeof prompt !== 'string' || !prompt.trim()) {
     return json(res, 400, { error: 'Missing prompt' });
   }
@@ -55,6 +55,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    const structuredText = mode === 'home_recap' ? {
+      format: {
+        type: 'json_schema',
+        name: 'home_workout_recap',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            summary: { type: 'string' },
+            suggestion_one: { type: 'string' },
+            suggestion_two: { type: 'string' },
+          },
+          required: ['summary', 'suggestion_one', 'suggestion_two'],
+          additionalProperties: false,
+        },
+      },
+    } : undefined;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
@@ -69,6 +86,7 @@ export default async function handler(req, res) {
         input: prompt.trim(),
         reasoning: { effort: 'none' },
         max_output_tokens: maxOutputTokens,
+        ...(structuredText ? { text: structuredText } : {}),
       }),
     });
 

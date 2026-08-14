@@ -37,6 +37,7 @@ It launches full-screen like a native app.
 
 ## Notes
 - Login is required. Google is the primary sign-in method and secure email links are the fallback.
+- First-time users complete a private profile with their name, age, gender, weight, and height. Personal measurements are stored in an owner-only table and are never exposed to friends or leaderboards.
 - Data is saved per authenticated user on-device first (IndexedDB), so workouts still work offline after sign-in. Private data is also synced to Supabase.
 - Every signed-in user appears in the weekly, monthly, yearly, and all-time aggregate leaderboard. Accepted friends can also see workout and exercise names; individual weights and reps remain private.
 - Use Profile → Back up data for a portable JSON export.

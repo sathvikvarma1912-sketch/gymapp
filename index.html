@@ -160,8 +160,40 @@ body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-lo
 #modalCard{background:var(--card);border-radius:26px 26px 0 0;padding:22px 20px calc(12px + var(--compact-sab));width:100%;max-height:85%;overflow-y:auto;animation:up .3s cubic-bezier(.32,.72,.25,1)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 #modalCard textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:16px;color:var(--text);padding:14px;font:13px/1.6 ui-monospace,monospace;min-height:180px;outline:none;margin:12px 0}
-input.txt,textarea.txt{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;outline:none;margin-top:8px}
-input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
+input.txt,textarea.txt,select.txt{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;outline:none;margin-top:8px}
+input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--lime)}
+select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--lime) 50%),linear-gradient(135deg,var(--lime) 50%,transparent 50%);background-position:calc(100% - 18px) 20px,calc(100% - 13px) 20px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:38px}
+
+/* settings */
+.settings-hero{position:relative;overflow:hidden;padding:20px;background:linear-gradient(145deg,#1b2614,#10150d);border-color:rgba(205,251,71,.2)}
+.settings-hero::after{content:"";position:absolute;right:-28px;top:-35px;width:120px;height:120px;border-radius:50%;background:rgba(205,251,71,.1)}
+.settings-avatar{width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--lime);color:var(--bg);font:800 16px "Space Grotesk",sans-serif;flex:none;box-shadow:0 9px 26px rgba(205,251,71,.18)}
+.settings-name{font:700 19px/1.2 "Space Grotesk",sans-serif}
+.settings-email{color:var(--muted);font-size:11px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.settings-list{overflow:hidden;padding:0}
+.setting-item{width:100%;display:grid;grid-template-columns:44px minmax(0,1fr) 22px;align-items:center;gap:12px;padding:15px 16px;text-align:left}
+.setting-item+.setting-item{border-top:1px solid var(--line)}
+.setting-icon{width:42px;height:42px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:var(--card2);color:var(--lime);font:800 15px "Space Grotesk",sans-serif}
+.setting-title{font-weight:700;font-size:14px}
+.setting-copy{color:var(--muted);font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setting-arrow{color:var(--lime);font-size:21px;text-align:right}
+.contact-card{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);background:linear-gradient(145deg,rgba(37,211,102,.1),var(--card));border-color:rgba(37,211,102,.25)}
+.contact-icon{width:44px;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#25d366;color:#08170e;font-weight:900;font-size:18px;flex:none}
+.creator-mark{width:184px;margin:28px 2px 4px auto;text-align:right}
+.creator-overline{color:var(--muted);font-size:8px;letter-spacing:.22em;text-transform:uppercase;margin:0 4px 5px 0}
+.creator-logo{display:grid;grid-template-columns:1fr 16px 1fr;align-items:start;color:var(--lime)}
+.creator-letter{font:700 31px/1 "Space Grotesk",sans-serif;letter-spacing:-.05em;text-align:center}
+.creator-dash{font:600 19px/1.2 "Space Grotesk",sans-serif;color:var(--muted);text-align:center}
+.creator-name{display:block;color:var(--muted);font:500 8px/1.2 Inter,sans-serif;letter-spacing:.09em;text-transform:uppercase;margin-top:4px}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:15px}
+.modal-close{width:36px;height:36px;border-radius:13px;background:var(--card2);border:1px solid var(--line);flex:none}
+.profile-form{display:grid;gap:12px}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-label{display:block;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.field-label .txt{color:var(--text);font-size:14px;letter-spacing:normal;text-transform:none;font-weight:500}
+.settings-action{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+.settings-action+.settings-action{border-top:1px solid var(--line)}
+@media(max-width:360px){.profile-grid{grid-template-columns:1fr}.settings-email{max-width:190px}}
 
 .hist .vol{color:var(--lime);font-weight:700}
 .hist-date{font-size:13px;color:var(--lime);margin:18px 2px 8px;font-weight:700;letter-spacing:.04em}
@@ -300,16 +332,17 @@ input.txt:focus,textarea.txt:focus{border-color:var(--lime)}
 
 <!-- PROFILE -->
 <section class="screen" id="s-prof">
-  <h1 style="font-size:24px;margin-bottom:16px">Profile</h1>
-  <div class="card row"><div><b>Units</b><div class="muted">Shown across the app</div></div><button class="chip on" id="unitChip2"></button></div>
-  <div class="card row pressable" id="backupBtn"><div><b>Back up data</b><div class="muted">Download all data as JSON</div></div><span>↓</span></div>
-  <div class="card row pressable" id="restoreBtn"><div><b>Restore data</b><div class="muted">Import a backup file</div></div><span>↑</span></div>
-  <input type="file" id="restoreFile" accept=".json" hidden>
-  <div class="card row"><div><b>Cloud sync</b><div class="muted" id="cloudStatus" style="margin-top:4px">Checking setup…</div></div><button class="chip" onclick="goScreen('s-friends')">Manage</button></div>
-  <div class="card">
-    <div class="row"><div><b>AI features</b><div class="muted" id="aiStatus" style="margin-top:4px">Checking connection…</div></div><button class="chip" id="aiCheckBtn">Check</button></div>
-    <div class="muted" style="margin-top:10px">The OpenAI key stays in the server-side /api/ai endpoint on Vercel.</div>
+  <h1 style="font-size:24px;margin-bottom:16px">Settings</h1>
+  <div class="card settings-hero"><div class="row" style="justify-content:flex-start"><div class="settings-avatar" id="settingsAvatar">RN</div><div style="min-width:0"><div class="settings-name" id="settingsName">Your profile</div><div class="settings-email" id="settingsEmail"></div></div></div></div>
+  <div class="card settings-list">
+    <button class="setting-item pressable" onclick="openProfileDetails()"><span class="setting-icon">ID</span><span><span class="setting-title">Profile details</span><span class="setting-copy" id="profileDetailsSummary">Name, age, gender, weight and height</span></span><span class="setting-arrow">›</span></button>
+    <button class="setting-item pressable" onclick="openBackupSettings()"><span class="setting-icon">⇩</span><span><span class="setting-title">Backup settings</span><span class="setting-copy">Export or restore your RepNet data</span></span><span class="setting-arrow">›</span></button>
+    <button class="setting-item pressable" onclick="openCloudSettings()"><span class="setting-icon">☁</span><span><span class="setting-title">Cloud settings</span><span class="setting-copy" id="cloudStatus">Checking sync…</span></span><span class="setting-arrow">›</span></button>
+    <button class="setting-item pressable" onclick="openAISettings()"><span class="setting-icon">✦</span><span><span class="setting-title">AI features</span><span class="setting-copy" id="aiSettingsStatus">Checking connection…</span></span><span class="setting-arrow">›</span></button>
   </div>
+  <input type="file" id="restoreFile" accept=".json" hidden>
+  <a class="card contact-card pressable" href="https://wa.me/917013479797?text=Hi%20Sathvik%2C%20I%20have%20a%20question%20about%20RepNet." target="_blank" rel="noopener noreferrer" aria-label="Chat with Sathvik on WhatsApp"><span class="contact-icon">W</span><span style="min-width:0;flex:1"><b>Questions or feedback?</b><span class="muted" style="display:block;margin-top:2px">Chat directly on WhatsApp</span></span><span class="setting-arrow">›</span></a>
+  <div class="creator-mark" aria-label="Created by Sathvik Vanaparthi"><div class="creator-overline">Created by</div><div class="creator-logo"><div class="creator-letter">S<span class="creator-name">Sathvik</span></div><div class="creator-dash">—</div><div class="creator-letter">V<span class="creator-name">Vanaparthi</span></div></div></div>
 </section>
 </div>
 
@@ -388,7 +421,7 @@ const initialState=()=>({
 });
 let S=initialState();
 let active=null,tick=null;
-const cloud={client:null,user:null,profile:null,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:'',googleClientId:'',googleReady:false};
+const cloud={client:null,user:null,profile:null,details:null,detailsLoaded:false,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:'',googleClientId:'',googleReady:false};
 let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],year:[],all:[]}};
 let leaderMode='volume',leaderRange='all';
 let friendSearch={term:'',results:[],busy:false,error:'',timer:null};
@@ -408,16 +441,7 @@ async function load(user){
   await idb.set(S,storageKey);
   active=S.activeWorkout||null;renderAll();
   if(active){$('#wkName').textContent=active.name;openSheet();renderActive();startTimer()}
-  if(!S.name)askName();else dailyBrief();}
-
-/* ---------- onboarding ---------- */
-function askName(){
-  modal(`<h2 style="font-size:24px">Welcome to RepNet 👋</h2>
-    <div class="muted" style="margin-top:4px">What should your coach call you?</div>
-    <input class="txt" id="nameIn" placeholder="Your name" style="margin-top:14px">
-    <button class="btn" style="margin-top:14px" onclick="saveName()">Let's lift</button>`);
-}
-window.saveName=()=>{S.name=($('#nameIn').value.trim()||'Lifter');save();closeModal();renderAll();dailyBrief();};
+  if(S.name)dailyBrief();}
 
 /* ---------- latest workout AI recap ---------- */
 let homeRecapRequestId=null;
@@ -515,7 +539,7 @@ function bestFor(name){
 /* ---------- render: home ---------- */
 function renderHome(){
   $('#dateLine').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});
-  $('#unitChip').textContent=S.units;$('#unitChip2').textContent=S.units;
+  $('#unitChip').textContent=S.units;
   const now=new Date(),dow=now.getDay(),sun=new Date(now);sun.setDate(now.getDate()-dow);sun.setHours(0,0,0,0);
   const days=['S','M','T','W','T','F','S'];
   $('#week').innerHTML=days.map((d,i)=>{
@@ -586,7 +610,7 @@ window.openHistoryDate=value=>{
   renderHist();goScreen('s-hist');$('#s-hist').scrollTop=0;
 };
 
-function renderAll(){renderHome();renderTpls();renderHist();renderFriends()}
+function renderAll(){renderHome();renderTpls();renderHist();renderFriends();renderProfileSettings()}
 
 /* ---------- active workout ---------- */
 function startWorkout(tplId,prefill){
@@ -744,23 +768,25 @@ async function askAI(prompt,sys,mode){
   return d.text.trim();
 }
 function aiErrorMessage(error){return error?.message||'The AI request failed. Please try again.'}
+let aiConnection={text:'Checking connection…',ready:null};
+function paintAIStatus(){
+  ['#aiSettingsStatus','#aiStatus'].forEach(selector=>{const el=$(selector);if(!el)return;el.textContent=aiConnection.text;el.style.color=aiConnection.ready===true?'var(--lime)':aiConnection.ready===false?'var(--danger)':''});
+}
 async function checkAIStatus(){
-  const status=$('#aiStatus'),button=$('#aiCheckBtn');
-  status.textContent='Checking connection…';button.disabled=true;
+  const button=$('#aiCheckBtn');
+  aiConnection={text:'Checking connection…',ready:null};paintAIStatus();if(button)button.disabled=true;
   try{
     const r=await fetch('/api/ai',{cache:'no-store'});
     const d=await r.json().catch(()=>null);
     if(!r.ok||!d?.ok)throw new Error();
-    if(!d.configured)status.textContent='Add OPENAI_API_KEY in Vercel, then redeploy';
-    else if(d.ready)status.textContent='Connected and ready';
-    else if(d.reason==='invalid_key')status.textContent='OpenAI rejected the API key — replace it in Vercel';
-    else if(d.reason==='model_unavailable')status.textContent='API key or model check failed — check Vercel logs';
-    else status.textContent='OpenAI is unreachable right now — try again';
-    status.style.color=d.ready?'var(--lime)':'var(--danger)';
+    if(!d.configured)aiConnection={text:'Add OPENAI_API_KEY in Vercel, then redeploy',ready:false};
+    else if(d.ready)aiConnection={text:'Connected and ready',ready:true};
+    else if(d.reason==='invalid_key')aiConnection={text:'OpenAI rejected the API key — replace it in Vercel',ready:false};
+    else if(d.reason==='model_unavailable')aiConnection={text:'API key or model check failed — check Vercel logs',ready:false};
+    else aiConnection={text:'OpenAI is unreachable right now — try again',ready:false};
   }catch(_){
-    status.textContent='AI endpoint missing — redeploy the full project to Vercel';
-    status.style.color='var(--danger)';
-  }finally{button.disabled=false}
+    aiConnection={text:'AI endpoint missing — redeploy the full project to Vercel',ready:false};
+  }finally{paintAIStatus();if(button)button.disabled=false}
 }
 window.aiSummary=async id=>{
   const s=S.sessions.find(x=>x.id===id);const b=$('#aiSumBtn'),out=$('#aiOut');
@@ -836,7 +862,6 @@ async function pushCloudState(){
   try{
     const {error}=await cloud.client.from('user_states').upsert({user_id:cloud.user.id,state:S,updated_at:new Date().toISOString()},{onConflict:'user_id'});
     if(error)throw error;
-    if(S.name&&cloud.profile?.display_name!==S.name){const {error:profileError}=await cloud.client.from('profiles').update({display_name:S.name,updated_at:new Date().toISOString()}).eq('id',cloud.user.id);if(profileError)throw profileError;cloud.profile.display_name=S.name}
     await syncWorkoutOverviews();cloud.error='';
   }catch(e){cloud.error=e.message||'Sync failed'}
   finally{cloud.syncing=false;renderCloudStatus();if(cloud.dirty)scheduleCloudSync()}
@@ -849,11 +874,16 @@ async function ensureCloudProfile(){
   if(!data){
     const created=await profiles.insert({id:cloud.user.id,display_name:S.name||cloud.user.email?.split('@')[0]||'Lifter',friend_code:friendCode()}).select('id,display_name,friend_code').single();
     if(created.error)throw created.error;data=created.data;
-  }else if(S.name&&data.display_name!==S.name){
-    const updated=await profiles.update({display_name:S.name,updated_at:new Date().toISOString()}).eq('id',cloud.user.id).select('id,display_name,friend_code').single();
-    if(updated.error)throw updated.error;data=updated.data;
   }
   cloud.profile=data;
+}
+
+async function loadProfileDetails(){
+  const {data,error}=await cloud.client.from('profile_details').select('user_id,first_name,last_name,age,gender,weight_kg,height_cm,updated_at').eq('user_id',cloud.user.id).maybeSingle();
+  if(error)throw error;
+  cloud.details=data||null;cloud.detailsLoaded=true;
+  if(data?.first_name){S.name=data.first_name;await idb.set(S,storageKey)}
+  renderProfileSettings();
 }
 
 async function pullCloudState(){
@@ -866,7 +896,7 @@ async function pullCloudState(){
 async function onCloudSignedIn(){
   if(!cloud.user||cloud.lastUserId===cloud.user.id)return;
   cloud.lastUserId=cloud.user.id;cloud.error='';renderFriends();
-  try{await ensureCloudProfile();await pullCloudState();await refreshSocial()}
+  try{await ensureCloudProfile();await pullCloudState();await loadProfileDetails();await refreshSocial();if(!cloud.details)openProfileDetails(true)}
   catch(e){cloud.lastUserId=null;cloud.error=e.message||'Could not load cloud data';renderFriends()}
 }
 
@@ -878,17 +908,17 @@ function lockApp(message=''){
 }
 function unlockApp(){showAuthMessage('');$('#authGate').classList.add('hidden');document.body.classList.remove('auth-locked')}
 function resetCloudUser(message=''){
-  cloud.user=null;cloud.profile=null;cloud.lastUserId=null;appUserId='';appLoaded=false;storageKey='';
+  cloud.user=null;cloud.profile=null;cloud.details=null;cloud.detailsLoaded=false;cloud.lastUserId=null;appUserId='';appLoaded=false;storageKey='';
   social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],year:[],all:[]}};
   clearTimeout(friendSearch.timer);friendSearch={term:'',results:[],busy:false,error:'',timer:null};
-  clearInterval(tick);active=null;$('#sheet').classList.remove('open');$('#sheet').style.display='none';$('#chat').classList.remove('open');$('#modal').classList.remove('open');
+  clearInterval(tick);active=null;modalLocked=false;$('#sheet').classList.remove('open');$('#sheet').style.display='none';$('#chat').classList.remove('open');$('#modal').classList.remove('open');
   lockApp(message);renderFriends();
 }
 async function activateCloudUser(user){
   cloud.user=user;
   if(appUserId===user.id&&!appLoaded)return;
   if(appUserId!==user.id){appUserId=user.id;appLoaded=false;cloud.lastUserId=null;await load(user);appLoaded=true}
-  unlockApp();await onCloudSignedIn();
+  await onCloudSignedIn();unlockApp();
 }
 
 const isStandaloneApp=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
@@ -1035,13 +1065,12 @@ async function refreshSocial(){
 }
 
 function renderCloudStatus(){
-  const el=$('#cloudStatus');if(!el)return;
-  if(!cloud.configured)el.textContent='Not configured';
-  else if(!cloud.user)el.textContent='Sign in required';
-  else if(cloud.syncing)el.textContent='Syncing…';
-  else if(cloud.error)el.textContent='Sync needs attention';
-  else el.textContent='Synced and backed up';
-  el.style.color=cloud.error?'var(--danger)':'';
+  let text='Synced and backed up';
+  if(!cloud.configured)text='Not configured';
+  else if(!cloud.user)text='Sign in required';
+  else if(cloud.syncing)text='Syncing…';
+  else if(cloud.error)text='Sync needs attention';
+  ['#cloudStatus','#cloudStatusModal'].forEach(selector=>{const el=$(selector);if(!el)return;el.textContent=text;el.style.color=cloud.error?'var(--danger)':''});
 }
 
 function renderFriends(){
@@ -1092,27 +1121,75 @@ function renderFriends(){
 }
 
 /* ---------- profile ---------- */
-const toggleUnits=()=>{S.units=S.units==='lbs'?'kg':'lbs';save();renderAll();toast(`Units: ${S.units}`)};
-$('#unitChip').onclick=toggleUnits;$('#unitChip2').onclick=toggleUnits;
-$('#aiCheckBtn').onclick=checkAIStatus;
+const genderLabels={male:'Male',female:'Female',non_binary:'Non-binary',other:'Other',prefer_not_to_say:'Prefer not to say'};
+window.toggleUnits=()=>{S.units=S.units==='lbs'?'kg':'lbs';save();renderAll();toast(`Units: ${S.units}`)};
+$('#unitChip').onclick=window.toggleUnits;
+function renderProfileSettings(){
+  const fallback=cloud.user?.user_metadata?.full_name||cloud.user?.user_metadata?.name||S.name||'Your profile';
+  const name=cloud.details?`${cloud.details.first_name} ${cloud.details.last_name}`.trim():(cloud.profile?.display_name||fallback);
+  const avatar=$('#settingsAvatar'),nameEl=$('#settingsName'),email=$('#settingsEmail'),summary=$('#profileDetailsSummary');
+  if(avatar)avatar.textContent=profileInitials(name||'RN');if(nameEl)nameEl.textContent=name;if(email)email.textContent=cloud.user?.email||'';
+  if(summary)summary.textContent=cloud.details?`${cloud.details.age} · ${genderLabels[cloud.details.gender]||'Profile'} · ${Number(cloud.details.weight_kg)} kg · ${Number(cloud.details.height_cm)} cm`:'Complete your personal details';
+  paintAIStatus();
+}
+let profileOnboardingRequired=false;
+window.openProfileDetails=(required=false)=>{
+  profileOnboardingRequired=required||!cloud.details;
+  const metadata=cloud.user?.user_metadata||{},full=metadata.full_name||metadata.name||S.name||'';
+  const pieces=full.trim().split(/\s+/).filter(Boolean),details=cloud.details||{};
+  const first=details.first_name||metadata.given_name||pieces[0]||'';
+  const last=details.last_name||metadata.family_name||pieces.slice(1).join(' ')||'';
+  const gender=details.gender||'prefer_not_to_say';
+  modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">${profileOnboardingRequired?'Welcome to RepNet':'Your account'}</div><h2 style="font-size:24px">${profileOnboardingRequired?'Set up your profile':'Profile details'}</h2><div class="muted" style="margin-top:4px">${profileOnboardingRequired?'Tell us the basics before your first workout. You can edit them later.':'Keep your personal and training details up to date.'}</div></div>${profileOnboardingRequired?'':'<button class="modal-close" type="button" onclick="closeModal()">✕</button>'}</div>
+    <form class="profile-form" onsubmit="saveProfileDetails(event)">
+      <div class="profile-grid"><label class="field-label">First name<input class="txt" id="profileFirst" maxlength="60" autocomplete="given-name" value="${esc(first)}" required></label><label class="field-label">Last name<input class="txt" id="profileLast" maxlength="60" autocomplete="family-name" value="${esc(last)}" required></label></div>
+      <div class="profile-grid"><label class="field-label">Age<input class="txt" id="profileAge" type="number" inputmode="numeric" min="13" max="120" value="${details.age??''}" required></label><label class="field-label">Gender<select class="txt" id="profileGender" required>${Object.entries(genderLabels).map(([value,label])=>`<option value="${value}" ${gender===value?'selected':''}>${label}</option>`).join('')}</select></label></div>
+      <div class="profile-grid"><label class="field-label">Weight (kg)<input class="txt" id="profileWeight" type="number" inputmode="decimal" min="20" max="500" step="0.1" value="${details.weight_kg??''}" required></label><label class="field-label">Height (cm)<input class="txt" id="profileHeight" type="number" inputmode="decimal" min="80" max="300" step="0.1" value="${details.height_cm??''}" required></label></div>
+      <label class="field-label">App units<select class="txt" id="profileUnits"><option value="kg" ${S.units==='kg'?'selected':''}>Kilograms (kg)</option><option value="lbs" ${S.units==='lbs'?'selected':''}>Pounds (lbs)</option></select></label>
+      <button class="btn" id="profileSave" type="submit" style="margin-top:4px">${profileOnboardingRequired?'Complete setup':'Save changes'}</button>
+      ${profileOnboardingRequired?'<div class="muted" style="font-size:10px;text-align:center">Your age, gender, weight and height are private and visible only to you.</div>':''}
+    </form>`,profileOnboardingRequired);
+  setTimeout(()=>$('#profileFirst')?.focus(),250);
+};
+window.saveProfileDetails=async event=>{
+  event?.preventDefault();
+  const first=$('#profileFirst').value.trim(),last=$('#profileLast').value.trim(),age=Number($('#profileAge').value),gender=$('#profileGender').value,weight=Number($('#profileWeight').value),height=Number($('#profileHeight').value),units=$('#profileUnits').value;
+  if(!first||!last)return toast('Enter your first and last name');
+  if(!Number.isInteger(age)||age<13||age>120)return toast('Enter an age from 13 to 120');
+  if(!genderLabels[gender])return toast('Choose a gender option');
+  if(!Number.isFinite(weight)||weight<20||weight>500)return toast('Enter weight between 20 and 500 kg');
+  if(!Number.isFinite(height)||height<80||height>300)return toast('Enter height between 80 and 300 cm');
+  const button=$('#profileSave'),label=button.textContent;button.disabled=true;button.textContent='Saving…';
+  try{
+    const updates={user_id:cloud.user.id,first_name:first,last_name:last,age,gender,weight_kg:Math.round(weight*100)/100,height_cm:Math.round(height*100)/100,updated_at:new Date().toISOString()};
+    const saved=await cloud.client.from('profile_details').upsert(updates,{onConflict:'user_id'}).select('user_id,first_name,last_name,age,gender,weight_kg,height_cm,updated_at').single();
+    if(saved.error)throw saved.error;
+    const displayName=`${first} ${last}`;
+    const updatedProfile=await cloud.client.from('profiles').update({display_name:displayName,updated_at:new Date().toISOString()}).eq('id',cloud.user.id).select('id,display_name,friend_code').single();
+    if(updatedProfile.error)throw updatedProfile.error;
+    cloud.details=saved.data;cloud.detailsLoaded=true;cloud.profile=updatedProfile.data;S.name=first;S.units=units;profileOnboardingRequired=false;save();closeModal(true);renderAll();dailyBrief();toast('Profile saved');
+  }catch(e){toast(e.message||'Could not save profile');if(button?.isConnected){button.disabled=false;button.textContent=label}}
+};
+window.downloadBackup=()=>{
+  const url=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=`repnet-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+window.openBackupSettings=()=>modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Your data</div><h2 style="font-size:23px">Backup settings</h2><div class="muted" style="margin-top:4px">Keep a portable copy of workouts and custom templates.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="settings-action"><div><b>Download backup</b><div class="muted">Export all data as a JSON file</div></div><button class="chip on" onclick="downloadBackup()">Download</button></div><div class="settings-action"><div><b>Restore backup</b><div class="muted">Import a RepNet JSON backup</div></div><button class="chip" onclick="document.querySelector('#restoreFile').click()">Choose file</button></div>`);
+window.openCloudSettings=()=>{modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Private sync</div><h2 style="font-size:23px">Cloud settings</h2><div class="muted" style="margin-top:4px">Signed in as ${esc(cloud.user?.email||'')}</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="card" style="margin-bottom:12px"><div class="row"><div><b>Sync status</b><div class="muted" id="cloudStatusModal" style="margin-top:3px">Checking…</div></div><span class="status-dot ${cloud.error?'':'on'}"></span></div>${cloud.profile?.friend_code?`<div class="muted" style="margin-top:12px">Friend code</div><div class="friend-code">${esc(cloud.profile.friend_code)}</div>`:''}</div><button class="btn ghost" onclick="closeModal();goScreen('s-friends')">Open friends & leaderboard</button><button class="btn ghost" style="margin-top:10px;color:var(--danger)" onclick="cloudSignOut()">Sign out</button>`);renderCloudStatus()};
+window.openAISettings=()=>{modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">RepNet coach</div><h2 style="font-size:23px">AI features</h2><div class="muted" style="margin-top:4px">Workout recaps, suggestions, templates and chat.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="card"><div class="row"><div><b>Connection</b><div class="muted" id="aiStatus" style="margin-top:3px">${esc(aiConnection.text)}</div></div><button class="chip" id="aiCheckBtn" onclick="checkAIStatus()">Check</button></div><div class="muted" style="margin-top:12px">Your OpenAI key stays in the server-side /api/ai endpoint on Vercel.</div></div>`);paintAIStatus()};
 $('#histDate').onchange=renderHist;
 $('#histClear').onclick=()=>{$('#histDate').value='';renderHist()};
 $('#dateLine').onclick=()=>openHistoryDate(Date.now());
-$('#backupBtn').onclick=()=>{
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));
-  a.download=`repnet-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
-};
-$('#restoreBtn').onclick=()=>$('#restoreFile').click();
 $('#restoreFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{S=JSON.parse(r.result);save();renderAll();dailyBrief();toast('Data restored')}catch(_){toast('Invalid backup file')}};
+  r.onload=()=>{try{S=JSON.parse(r.result);save();renderAll();dailyBrief();closeModal(true);toast('Data restored')}catch(_){toast('Invalid backup file')}finally{e.target.value=''}};
   r.readAsText(f);
 };
 
 /* ---------- modal + nav ---------- */
-function modal(html){$('#modalCard').innerHTML=html;$('#modal').classList.add('open')}
-window.closeModal=()=>$('#modal').classList.remove('open');
+let modalLocked=false;
+function modal(html,locked=false){modalLocked=locked;$('#modalCard').innerHTML=html;$('#modal').classList.add('open')}
+window.closeModal=force=>{if(modalLocked&&!force)return;modalLocked=false;$('#modal').classList.remove('open')};
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 window.goScreen=id=>{
   const b=document.querySelector(`#nav button[data-s="${id}"]`);if(!b)return;

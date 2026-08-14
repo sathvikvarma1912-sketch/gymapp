@@ -10,6 +10,20 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Personal measurements are separated from discoverable profiles so friends
+-- and leaderboard users can never read them through the profiles API.
+create table if not exists public.profile_details (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  first_name text not null check (char_length(btrim(first_name)) between 1 and 60),
+  last_name text not null check (char_length(btrim(last_name)) between 1 and 60),
+  age smallint not null check (age between 13 and 120),
+  gender text not null check (gender in ('male', 'female', 'non_binary', 'other', 'prefer_not_to_say')),
+  weight_kg numeric(6,2) not null check (weight_kg between 20 and 500),
+  height_cm numeric(5,2) not null check (height_cm between 80 and 300),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.user_states (
   user_id uuid primary key references auth.users(id) on delete cascade,
   state jsonb not null,
@@ -55,11 +69,15 @@ alter table public.workout_overviews alter column workout_date set not null;
 create index if not exists workout_overviews_user_started on public.workout_overviews (user_id, started_at desc);
 
 alter table public.profiles enable row level security;
+alter table public.profile_details enable row level security;
 alter table public.user_states enable row level security;
 alter table public.friendships enable row level security;
 alter table public.workout_overviews enable row level security;
 
 grant select, insert, update on table public.profiles to authenticated;
+revoke all on table public.profile_details from anon;
+revoke all on table public.profile_details from authenticated;
+grant select, insert, update on table public.profile_details to authenticated;
 grant select, insert, update on table public.user_states to authenticated;
 grant select, insert, update, delete on table public.friendships to authenticated;
 grant select, insert, update, delete on table public.workout_overviews to authenticated;
@@ -81,6 +99,16 @@ create policy "users insert own profile" on public.profiles
 drop policy if exists "users update own profile" on public.profiles;
 create policy "users update own profile" on public.profiles
   for update to authenticated using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
+
+drop policy if exists "owners read profile details" on public.profile_details;
+create policy "owners read profile details" on public.profile_details
+  for select to authenticated using ((select auth.uid()) = user_id);
+drop policy if exists "owners insert profile details" on public.profile_details;
+create policy "owners insert profile details" on public.profile_details
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists "owners update profile details" on public.profile_details;
+create policy "owners update profile details" on public.profile_details
+  for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 drop policy if exists "owners read private state" on public.user_states;
 create policy "owners read private state" on public.user_states

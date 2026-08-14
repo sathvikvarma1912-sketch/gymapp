@@ -1,6 +1,7 @@
 {
   "name": "RepNet",
   "short_name": "RepNet",
+  "id": "/",
   "description": "Train, track progress, and stay accountable with friends.",
   "start_url": "/",
   "scope": "/",

@@ -47,6 +47,9 @@ export default async function handler(req, res) {
   if (prompt.length > 100000) {
     return json(res, 413, { error: 'This message is too large to process.' });
   }
+  if (typeof system === 'string' && system.length > 80000) {
+    return json(res, 413, { error: 'The AI instructions are too large to process.' });
+  }
   if (!apiKey) {
     return json(res, 503, {
       error: 'OPENAI_API_KEY is not configured in Vercel.',
@@ -126,6 +129,7 @@ export default async function handler(req, res) {
         input: prompt.trim(),
         reasoning: { effort: 'none' },
         max_output_tokens: maxOutputTokens,
+        ...(mode === 'template_builder' ? { prompt_cache_key: 'repnet-template-catalog-v1' } : {}),
         ...(structuredText ? { text: structuredText } : {}),
       }),
     });

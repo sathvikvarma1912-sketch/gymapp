@@ -18,6 +18,8 @@ No API key or server configuration is required. RepNet loads the public
 
 Exercise metadata is cached in IndexedDB for up to 24 hours, with stale metadata used when GitHub is temporarily unavailable. Animated GIF files stream from the repository only when a user opens a demonstration; RepNet does not cache those files. Cloud state and backups contain only the provider name, exercise ID, canonical name, and availability flag — never a GIF URL or the full catalog.
 
+If an exercise is not in the catalog, users can add it by name as a custom exercise in an active workout or template. Custom exercises work without a GIF and can be linked to the closest catalog demonstration later. The AI template builder receives the complete catalog name list, is instructed to prefer exact catalog names, offers nearby matches for review, and keeps unmatched suggestions as custom exercises instead of blocking the template. The stable catalog instruction prefix is eligible for OpenAI prompt caching.
+
 The dataset's code, structured data, and instructions are MIT-licensed. Its media has separate terms described in the repository's [`NOTICE.md`](https://github.com/hasaneyldrm/exercises-dataset/blob/main/NOTICE.md); the source and media terms remain documented here for project review.
 
 ## 4. Enable authentication, cloud sync and friends (Supabase free tier)

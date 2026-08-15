@@ -71,6 +71,46 @@ export default async function handler(req, res) {
           additionalProperties: false,
         },
       },
+    } : mode === 'template_builder' ? {
+      format: {
+        type: 'json_schema',
+        name: 'workout_templates',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            templates: {
+              type: 'array',
+              minItems: 1,
+              maxItems: 12,
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  exercises: {
+                    type: 'array',
+                    minItems: 1,
+                    maxItems: 20,
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        sets: { type: 'integer', minimum: 1, maximum: 20 },
+                      },
+                      required: ['name', 'sets'],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ['name', 'exercises'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['templates'],
+          additionalProperties: false,
+        },
+      },
     } : undefined;
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',

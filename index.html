@@ -425,7 +425,9 @@ const idb={
 
 /* ---------- state ---------- */
 const uid=()=>Math.random().toString(36).slice(2,9);
-const seedEx=(n,s,reps='')=>({id:uid(),name:n,sets:s||2,reps});
+const templateSetCount=value=>Math.min(20,Math.max(1,Number.parseInt(value,10)||2));
+const seedEx=(name,sets=2)=>({id:uid(),name,sets:templateSetCount(sets)});
+const normalizeTemplateSets=state=>{(state.templates||[]).forEach(t=>(t.exercises||[]).forEach(e=>{e.sets=templateSetCount(e.sets);delete e.reps}));return state};
 const mk=a=>a.map(x=>seedEx(x[0],x[1]));
 const initialState=()=>({
   ver:2,
@@ -456,7 +458,7 @@ async function load(user){
       v=legacy;if(!legacyOwner)await idb.set(user.id,'legacy-owner');
     }
   }
-  S=v?.ver===2?v:initialState();
+  S=normalizeTemplateSets(v?.ver===2?v:initialState());
   if(!S.name){S.name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||''}
   await idb.set(S,storageKey);
   active=S.activeWorkout||null;renderAll();
@@ -528,7 +530,7 @@ async function sendChat(){
   }catch(e){wait.textContent=aiErrorMessage(e);chatLog[chatLog.length-1].txt=wait.textContent}
 }
 
-const save=()=>{if(storageKey)idb.set(S,storageKey);scheduleCloudSync()};
+const save=()=>{normalizeTemplateSets(S);if(storageKey)idb.set(S,storageKey);scheduleCloudSync()};
 
 /* ---------- helpers ---------- */
 const $=q=>document.querySelector(q);
@@ -574,7 +576,7 @@ function renderHome(){
     if(i>-1)next=S.templates[(i+1)%S.templates.length];}
   if(next){$('#heroNext').textContent=next.name;
     $('#heroStart').onclick=()=>startWorkout(next.id);
-    $('#heroStats').textContent=`${next.exercises.length} exercises · ${next.exercises.reduce((a,e)=>a+(e.sets||2),0)} working sets`;}
+    $('#heroStats').textContent=`${next.exercises.length} exercises · ${next.exercises.reduce((a,e)=>a+templateSetCount(e.sets),0)} working sets`;}
   $('#dupBtn').style.display=S.sessions.length?'flex':'none';
   $('#homeTpls').innerHTML=S.templates.map(t=>`
     <div class="card tpl pressable" onclick="startWorkout('${t.id}')">
@@ -636,7 +638,7 @@ function renderAll(){renderHome();renderTpls();renderHist();renderFriends();rend
 function startWorkout(tplId,prefill){
   const t=S.templates.find(x=>x.id===tplId);
   active={id:uid(),templateId:tplId,name:prefill?prefill.name:t.name,start:Date.now(),units:S.units,pausedMs:0,pausedAt:null,
-    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:e.sets||2},()=>({w:'',r:e.reps||''}))})))
+    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:templateSetCount(e.sets)},()=>({w:'',r:''}))})))
       .map(e=>({...e,sets:e.sets.map(s=>({...s}))}))};
   $('#wkName').textContent=active.name;
   persistActive();openSheet();renderActive();startTimer();
@@ -745,11 +747,14 @@ window.editTpl=id=>{
     <input class="txt" id="tplName">
     <div id="tplExs" style="margin-top:12px">${t.exercises.map((e,i)=>`
       <div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">×${e.sets||2}${e.reps?` · ${esc(e.reps)} reps`:''}</span></div>
+        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">· ${templateSetCount(e.sets)} set${templateSetCount(e.sets)===1?'':'s'}</span></div>
         <div class="tpl-ex-actions"><button class="chip" onclick="editTplExercise('${t.id}',${i})" aria-label="Edit ${esc(e.name)}">✎</button><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
         <button class="chip" onclick="mvEx('${t.id}',${i},1)">↓</button>
         <button class="chip" onclick="rmTplEx('${t.id}',${i})">✕</button></div></div>`).join('')}</div>
-    <input class="txt" id="tplNewEx" placeholder="Add exercise…">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:9px;margin-top:12px">
+      <input class="txt" id="tplNewEx" placeholder="Add exercise…">
+      <input class="txt" id="tplNewSets" type="number" min="1" max="20" step="1" inputmode="numeric" value="2" aria-label="Number of sets">
+    </div>
     <button class="btn ghost sm" style="margin-top:10px" onclick="addTplEx('${t.id}')">+ Add</button>
     <button class="btn" style="margin-top:14px" onclick="saveTpl('${t.id}')">Save</button>`);
   $('#tplName').value=t.name;
@@ -758,16 +763,16 @@ window.mvEx=(id,i,d)=>{const t=S.templates.find(x=>x.id===id);const j=i+d;if(j<0
   [t.exercises[i],t.exercises[j]]=[t.exercises[j],t.exercises[i]];save();editTpl(id)};
 window.rmTplEx=(id,i)=>{const t=S.templates.find(x=>x.id===id);t.exercises.splice(i,1);save();editTpl(id)};
 window.editTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i];if(!exercise)return;
-  modal(`<h2 style="font-size:20px">Edit template exercise</h2><div class="muted" style="margin-top:4px">The target reps will be prefilled when you start this workout.</div>
+  modal(`<h2 style="font-size:20px">Edit template exercise</h2><div class="muted" style="margin-top:4px">Choose how many working sets this exercise should start with.</div>
     <label class="muted" for="tplExerciseName" style="display:block;margin-top:14px">Exercise name</label>
     <input class="txt" id="tplExerciseName" maxlength="80" autocomplete="off" enterkeyhint="next">
-    <label class="muted" for="tplExerciseReps" style="display:block;margin-top:12px">Target reps per set</label>
-    <input class="txt" id="tplExerciseReps" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="Leave blank" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExercise('${id}',${i})}">
+    <label class="muted" for="tplExerciseSets" style="display:block;margin-top:12px">Working sets</label>
+    <input class="txt" id="tplExerciseSets" type="number" min="1" max="20" step="1" inputmode="numeric" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExercise('${id}',${i})}">
     <button class="btn" style="margin-top:14px" onclick="saveTplExercise('${id}',${i})">Save exercise</button>`);
-  const nameInput=$('#tplExerciseName');nameInput.value=exercise.name;$('#tplExerciseReps').value=exercise.reps||'';nameInput.focus();nameInput.select()};
-window.saveTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim(),repsInput=$('#tplExerciseReps')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');if(repsInput&&!/^\d+$/.test(repsInput))return toast('Enter valid target reps');const reps=repsInput?Math.min(999,Math.max(1,parseInt(repsInput,10))):'';exercise.name=name;exercise.reps=reps;save();editTpl(id);toast('Template exercise updated')};
-window.addTplEx=id=>{const t=S.templates.find(x=>x.id===id);const n=$('#tplNewEx').value.trim();if(!n)return;
-  t.exercises.push(seedEx(n));save();editTpl(id)};
+  const nameInput=$('#tplExerciseName');nameInput.value=exercise.name;$('#tplExerciseSets').value=templateSetCount(exercise.sets);nameInput.focus();nameInput.select()};
+window.saveTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim(),setsInput=$('#tplExerciseSets')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');if(!/^\d+$/.test(setsInput||'')||+setsInput<1||+setsInput>20)return toast('Sets must be between 1 and 20');exercise.name=name;exercise.sets=templateSetCount(setsInput);delete exercise.reps;save();editTpl(id);toast('Template exercise updated')};
+window.addTplEx=id=>{const t=S.templates.find(x=>x.id===id),name=$('#tplNewEx').value.trim(),setsInput=$('#tplNewSets').value.trim();if(!name)return toast('Enter an exercise name');if(!/^\d+$/.test(setsInput)||+setsInput<1||+setsInput>20)return toast('Sets must be between 1 and 20');
+  t.exercises.push(seedEx(name,setsInput));save();editTpl(id)};
 window.saveTpl=id=>{const t=S.templates.find(x=>x.id===id);t.name=$('#tplName').value.trim()||t.name;save();closeModal();renderAll()};
 window.delTpl=id=>{if(!confirm('Delete this template?'))return;S.templates=S.templates.filter(x=>x.id!==id);save();closeModal();renderAll()};
 $('#newTplBtn').onclick=()=>{
@@ -830,10 +835,12 @@ window.aiTemplate=async()=>{
   const p=$('#aiTplPrompt').value.trim();if(!p)return;
   const b=$('#aiTplGo');b.innerHTML='<span class="spin"></span> Generating…';
   try{
-    const txt=await askAI(p,'Return ONLY JSON, no markdown: an array of workout templates like [{"name":"Upper A","exercises":["Bench Press","..."]}]. 4-8 exercises each.');
-    const arr=JSON.parse(txt.replace(/```json|```/g,'').trim());
-    arr.forEach(t=>S.templates.push({id:uid(),name:t.name,icon:'✨',exercises:t.exercises.map(name=>seedEx(name,2))}));
-    save();closeModal();renderAll();toast(`Added ${arr.length} template${arr.length>1?'s':''}`);
+    const txt=await askAI(p,'Build workout templates that match the user request. Choose an appropriate, independent number of working sets for every exercise based on the goal, exercise type, and requested workload; do not force the same set count across all exercises. Return only the requested structured JSON.','template_builder');
+    const parsed=JSON.parse(txt.replace(/```json|```/g,'').trim()),arr=Array.isArray(parsed)?parsed:parsed.templates;
+    if(!Array.isArray(arr)||!arr.length)throw new Error('AI returned no templates');
+    const generated=arr.map(t=>({id:uid(),name:String(t.name||'AI workout').slice(0,80),icon:'✨',exercises:(Array.isArray(t.exercises)?t.exercises:[]).map(ex=>typeof ex==='string'?seedEx(ex,2):seedEx(String(ex?.name||'Exercise').slice(0,80),ex?.sets)).filter(ex=>ex.name.trim()).slice(0,20)})).filter(t=>t.exercises.length);
+    if(!generated.length)throw new Error('AI returned no valid exercises');
+    S.templates.push(...generated);save();closeModal();renderAll();toast(`Added ${generated.length} template${generated.length>1?'s':''}`);
   }catch(e){$('#aiOut').textContent=aiErrorMessage(e);b.textContent='Generate'}
 };
 
@@ -853,12 +860,12 @@ const overviewFor=s=>({
 function mergeCloudState(remote){
   if(!remote||remote.ver!==S.ver)return;
   const localActive=S.activeWorkout;
-  if(!S.sessions.length&&!localActive){S={...remote,ver:2};return}
+  if(!S.sessions.length&&!localActive){S=normalizeTemplateSets({...remote,ver:2});return}
   const sessions=new Map((remote.sessions||[]).map(x=>[x.id,x]));
   (S.sessions||[]).forEach(x=>sessions.set(x.id,x));
   const templates=new Map((remote.templates||[]).map(x=>[x.id,x]));
   (S.templates||[]).forEach(x=>templates.set(x.id,x));
-  S={...remote,...S,ver:2,sessions:[...sessions.values()],templates:[...templates.values()],activeWorkout:localActive||remote.activeWorkout||null};
+  S=normalizeTemplateSets({...remote,...S,ver:2,sessions:[...sessions.values()],templates:[...templates.values()],activeWorkout:localActive||remote.activeWorkout||null});
 }
 
 function scheduleCloudSync(){

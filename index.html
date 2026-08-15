@@ -28,6 +28,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font:inherit;color:inherit}
 #app{height:100%;height:100dvh;display:flex;flex-direction:column}
 body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-locked #chat,body.auth-locked #modal{visibility:hidden}
+#demoBanner{display:none;position:fixed;left:50%;bottom:calc(78px + var(--compact-sab));transform:translateX(-50%);z-index:24;padding:7px 12px;border-radius:999px;background:#26331d;border:1px solid rgba(205,251,71,.35);color:var(--lime);font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+body.demo-mode #demoBanner{display:block}
 #authGate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:calc(28px + var(--sat)) 22px calc(28px + var(--sab));background:
   radial-gradient(circle at 80% 13%,rgba(205,251,71,.15),transparent 30%),linear-gradient(165deg,#11170e 0%,var(--bg) 52%)}
 #authGate.hidden{display:none}
@@ -105,7 +107,7 @@ body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-lo
 /* active workout sheet */
 #sheet{position:fixed;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,.25,1)}
 #sheet.open{display:flex;transform:none}
-#sheetHead{padding:calc(12px + var(--sat)) 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(11,14,9,.95)}
+.sheet-head{padding:calc(12px + var(--sat)) 18px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(11,14,9,.95)}
 #timer{font-family:"Space Grotesk";font-size:22px;font-weight:700;color:var(--lime);font-variant-numeric:tabular-nums}
 #timer.paused{color:var(--danger)}
 #wkName{max-width:190px;margin:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
@@ -120,6 +122,14 @@ body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-lo
 .ex-name-edit:active{background:var(--card2)}
 .ex-name-text{overflow:hidden;text-overflow:ellipsis;font-family:"Space Grotesk",Inter,sans-serif;font-size:17px;font-weight:700}
 .ex-name-pencil{color:var(--lime);font-size:13px;flex:none}
+.ex-tools{display:flex;gap:6px;align-items:center;flex:none}
+.demo-chip{padding:5px 8px;color:var(--lime);font-size:10px;line-height:1}
+.catalog-badge{display:inline-flex;align-items:center;gap:5px;margin-top:4px;color:var(--muted);font-size:10px}
+.catalog-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lime)}
+.catalog-line{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:3px}
+.catalog-line .catalog-badge{min-width:0;margin-top:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalog-edit-chip{flex:none;padding:5px 2px 5px 8px;background:transparent;border:0;color:var(--muted);font-size:9px;font-weight:600;line-height:1;opacity:.72}
+.catalog-edit-chip:active,.catalog-edit-chip:focus-visible{color:var(--text);opacity:1}
 .set{display:grid;grid-template-columns:34px 1fr 1fr 40px;gap:10px;align-items:center;margin-top:10px}
 .set .n{color:var(--muted);font-weight:700;font-size:13px;text-align:center}
 .set input{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:17px;font-weight:700;width:100%;outline:none;transition:border-color .15s}
@@ -163,6 +173,38 @@ body.auth-locked #app,body.auth-locked #nav,body.auth-locked #sheet,body.auth-lo
 input.txt,textarea.txt,select.txt{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:13px;outline:none;margin-top:8px}
 input.txt:focus,textarea.txt:focus,select.txt:focus{border-color:var(--lime)}
 select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--lime) 50%),linear-gradient(135deg,var(--lime) 50%,transparent 50%);background-position:calc(100% - 18px) 20px,calc(100% - 13px) 20px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:38px}
+.catalog-search{position:relative;margin-top:12px}
+.catalog-results{margin-top:10px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card2)}
+.catalog-result{width:100%;display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:stretch}
+.catalog-result+.catalog-result{border-top:1px solid var(--line)}
+.catalog-result-main{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px;text-align:left}
+.catalog-result-main:active{background:rgba(205,251,71,.08)}
+.catalog-result-name{display:block;font-weight:700;font-size:14px}
+.catalog-result-meta{display:block;color:var(--muted);font-size:11px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.catalog-video-state{font-size:10px;font-weight:700;color:var(--lime);white-space:nowrap}
+.catalog-video-state.missing{color:var(--muted)}
+.catalog-favorite{border-left:1px solid var(--line);color:var(--muted);font-size:18px}
+.catalog-favorite.on{color:var(--lime)}
+.catalog-empty{padding:16px;color:var(--muted);font-size:12px;line-height:1.5}
+.catalog-note{margin-top:10px;padding:9px 11px;border-radius:12px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;line-height:1.45}
+.catalog-suggestion-label{padding:10px 13px 4px;color:var(--muted);font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.055);border-radius:9px;color:transparent!important}
+.skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent);animation:shimmer 1.25s infinite}
+.catalog-skeleton{padding:13px;display:grid;gap:8px;border-top:1px solid var(--line)}
+.catalog-skeleton:first-child{border-top:0}
+.skeleton-line{height:12px;width:68%}.skeleton-line.sm{height:9px;width:45%}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.inline-demo{width:100%;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.inline-demo-media{width:180px;height:180px;max-width:100%;margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative;border-radius:14px;overflow:hidden}
+.inline-demo-media img{display:block;width:180px;height:180px;max-width:100%;object-fit:contain;border-radius:14px}
+.inline-demo-loading{color:var(--muted);font-size:11px;text-align:center}
+.inline-demo-actions{display:flex;justify-content:center;gap:8px;margin-top:9px}
+.inline-demo-cues{margin:10px 0 2px;padding:10px 11px;border-radius:13px;background:rgba(255,255,255,.03);font-size:10px;line-height:1.45;color:var(--muted)}
+.inline-demo-cues b{display:block;color:var(--text);font-size:10px;margin-bottom:5px}
+.inline-demo-cues ol{padding-left:17px}.inline-demo-cues li+li{margin-top:4px}
+.ai-match{padding:12px 0}
+.ai-match+.ai-match{border-top:1px solid var(--line)}
+.ai-match-name{font-size:12px;color:var(--muted);margin-bottom:6px}
 
 /* settings */
 .settings-hero{position:relative;overflow:hidden;padding:20px;background:linear-gradient(145deg,#1b2614,#10150d);border-color:rgba(205,251,71,.2)}
@@ -204,6 +246,20 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 .hist .vol{color:var(--lime);font-weight:700}
 .hist-date{font-size:13px;color:var(--lime);margin:18px 2px 8px;font-weight:700;letter-spacing:.04em}
+.hist-insights{margin-bottom:15px}
+.hist-insight-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hist-insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hist-insight{padding:11px;border-radius:14px;background:var(--card2);border:1px solid var(--line)}
+.hist-insight-value{font:700 18px/1.1 "Space Grotesk",Inter,sans-serif;color:var(--text)}
+.hist-insight-label{color:var(--muted);font-size:9px;margin-top:4px;text-transform:uppercase;letter-spacing:.07em}
+.hist-trend{font-size:10px;color:var(--lime)}
+.hist-swipe{position:relative;overflow:hidden;border-radius:var(--r);margin-bottom:14px}
+.hist-swipe-actions{position:absolute;inset:0 0 0 auto;width:174px;display:grid;grid-template-columns:repeat(3,58px);align-items:stretch}
+.hist-swipe-action{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;font-size:9px;font-weight:700;color:var(--text)}
+.hist-swipe-action.repeat{background:#26331d;color:var(--lime)}
+.hist-swipe-action.edit{background:#242821}.hist-swipe-action.delete{background:#3a1b1b;color:#ff9b9b}
+.hist-swipe-card{position:relative;z-index:1;margin:0;background:var(--card);transition:transform .2s ease;touch-action:pan-y}
+.hist-swipe.open .hist-swipe-card{transform:translateX(-174px)}
 .hist-tools{display:flex;align-items:center;gap:7px}
 .hist-picker{position:relative;display:flex;align-items:center;justify-content:center;min-width:104px;height:38px;padding:0 13px;background:var(--card2);border:1px solid var(--line);border-radius:14px;color:var(--text);font-size:12px;font-weight:700;overflow:hidden}
 .hist-picker::before{content:"▦";color:var(--lime);font-size:14px;margin-right:7px}
@@ -325,6 +381,7 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
     <h1 style="font-size:24px">History</h1>
     <div class="hist-tools"><label class="hist-picker"><span id="histDateLabel">All dates</span><input type="date" id="histDate" aria-label="Filter workouts by date"></label><button class="chip" id="histClear" style="display:none">Clear</button></div>
   </div>
+  <div id="histInsights"></div>
   <div id="histList"></div>
 </section>
 
@@ -334,7 +391,7 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
     <h1 style="font-size:24px">Leaderboard</h1>
     <button class="chip" id="friendsRefresh" style="display:none">Refresh</button>
   </div>
-  <div id="friendsContent"><div class="card muted">Loading sync…</div></div>
+  <div id="friendsContent"><div class="card"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm" style="margin-top:10px"></div></div></div>
 </section>
 
 <!-- PROFILE -->
@@ -377,7 +434,7 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 <!-- ACTIVE WORKOUT -->
 <div id="sheet">
-  <div id="sheetHead">
+  <div class="sheet-head">
     <button class="chip" id="cancelWk">✕</button>
     <div style="text-align:center;min-width:0;flex:1">
       <div id="wkName"></div>
@@ -392,7 +449,7 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
 
 <!-- CHAT -->
 <div id="chat">
-  <div id="sheetHead" style="position:relative">
+  <div class="sheet-head" style="position:relative">
     <button class="chip" id="chatClose">✕</button>
     <div style="text-align:center"><div class="eyebrow" style="margin:0">AI Coach</div><div class="disp" style="font-weight:700;color:var(--lime)">Ask anything</div></div>
     <span style="width:44px"></span>
@@ -407,6 +464,7 @@ select.txt{appearance:none;background-image:linear-gradient(45deg,transparent 50
 <!-- MODAL -->
 <div id="modal"><div id="modalCard"></div></div>
 <div id="toast"></div>
+<div id="demoBanner">Local demo · GitHub catalog · cloud sync off</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -426,12 +484,27 @@ const idb={
 /* ---------- state ---------- */
 const uid=()=>Math.random().toString(36).slice(2,9);
 const templateSetCount=value=>Math.min(20,Math.max(1,Number.parseInt(value,10)||2));
-const seedEx=(name,sets=2)=>({id:uid(),name,sets:templateSetCount(sets)});
-const normalizeTemplateSets=state=>{(state.templates||[]).forEach(t=>(t.exercises||[]).forEach(e=>{e.sets=templateSetCount(e.sets);delete e.reps}));return state};
+const CATALOG_PROVIDER='hasaneyldrm-github';
+const normalizeCatalogIdList=(value,max)=>Array.isArray(value)?[...new Set(value.filter(id=>typeof id==='string'&&/^[A-Za-z0-9._-]{1,240}$/.test(id)))].slice(0,max):[];
+const normalizeCatalogRef=value=>['exerciseapi',CATALOG_PROVIDER].includes(value?.provider)&&typeof value.id==='string'&&value.id?{
+  provider:value.provider,id:value.id.slice(0,240),canonicalName:String(value.canonicalName||value.id).slice(0,120),hasVideo:Boolean(value.hasVideo)
+}:null;
+const seedEx=(name,sets=2,catalogRef=null)=>({id:uid(),name,sets:templateSetCount(sets),...(normalizeCatalogRef(catalogRef)?{catalogRef:normalizeCatalogRef(catalogRef)}:{})});
+const normalizeTemplateSets=state=>{(state.templates||[]).forEach(t=>(t.exercises||[]).forEach(e=>{e.sets=templateSetCount(e.sets);delete e.reps;const ref=normalizeCatalogRef(e.catalogRef);if(ref)e.catalogRef=ref;else delete e.catalogRef}));return state};
+const migrateState=state=>{
+  if(!state||![2,3].includes(Number(state.ver)))return initialState();
+  state.ver=3;state.templates=Array.isArray(state.templates)?state.templates:[];state.sessions=Array.isArray(state.sessions)?state.sessions:[];
+  state.favoriteCatalogIds=normalizeCatalogIdList(state.favoriteCatalogIds,100);state.recentCatalogIds=normalizeCatalogIdList(state.recentCatalogIds,12);
+  normalizeTemplateSets(state);
+  [...state.sessions,state.activeWorkout].filter(Boolean).forEach(session=>(session.entries||[]).forEach(e=>{const ref=normalizeCatalogRef(e.catalogRef);if(ref)e.catalogRef=ref;else delete e.catalogRef}));
+  return state;
+};
 const mk=a=>a.map(x=>seedEx(x[0],x[1]));
 const initialState=()=>({
-  ver:2,
+  ver:3,
   units:'lbs',
+  favoriteCatalogIds:[],
+  recentCatalogIds:[],
   templates:[
     {id:uid(),name:'Upper',icon:'💪',exercises:mk([['Incline smith',2],['Pec dec fly',2],['Lat pulldown',2],['Lat row',1],['Upper back row',1],['Lateral raise',2],['Pushdown',2],['Hammer curl',1],['Preacher curl',1],['Reverse pec dec',1]])},
     {id:uid(),name:'Lower',icon:'🦵',exercises:mk([['Squat movement',2],['Extension',1],['Abduction',1],['Hamstring Curls',2],['Rdl',2],['Cable crunch',2],['Leg raises',2],['Seated calves',2]])},
@@ -448,17 +521,18 @@ let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[]
 let leaderMode='volume',leaderRange='all';
 let friendSearch={term:'',results:[],busy:false,error:'',timer:null};
 let storageKey='',appUserId='',appLoaded=false;
+const localDemoMode=['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).get('demo')==='1';
 
 async function load(user){
   storageKey=`state:${user.id}`;
   let v=await idb.get(storageKey);
   if(!v){
     const [legacy,legacyOwner]=await Promise.all([idb.get('state'),idb.get('legacy-owner')]);
-    if(legacy?.ver===2&&(!legacyOwner||legacyOwner===user.id)){
+    if([2,3].includes(Number(legacy?.ver))&&(!legacyOwner||legacyOwner===user.id)){
       v=legacy;if(!legacyOwner)await idb.set(user.id,'legacy-owner');
     }
   }
-  S=normalizeTemplateSets(v?.ver===2?v:initialState());
+  S=migrateState([2,3].includes(Number(v?.ver))?v:initialState());
   if(!S.name){S.name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||''}
   await idb.set(S,storageKey);
   active=S.activeWorkout||null;renderAll();
@@ -558,6 +632,158 @@ function bestFor(name){
   return {weight,reps:Math.max(...atWeight.map(s=>+s.r||0)),sets:setCount};
 }
 
+/* ---------- exercise catalog ---------- */
+const CATALOG_TTL=24*60*60*1000;
+const CATALOG_DATA_URL='https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/data/exercises.json';
+const CATALOG_MEDIA_BASE='https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main';
+const CATALOG_CACHE_KEY='exercise-catalog:hasaneyldrm:v2';
+let catalogPicker={kind:'',templateId:'',exerciseIndex:-1,results:[],timer:null,requestId:0,suggestions:false};
+let catalogMemory=null,catalogLoadPromise=null;
+const expandedDemoKeys=new Set();
+const safeMediaPath=(value,folder,extension)=>typeof value==='string'&&new RegExp(`^${folder}/[A-Za-z0-9._-]+\\.${extension}$`,'i').test(value)?value:null;
+const catalogMediaUrl=path=>`${CATALOG_MEDIA_BASE}/${path.split('/').map(encodeURIComponent).join('/')}`;
+function normalizeGithubExercise(value){
+  const id=typeof value?.id==='string'?value.id.trim().slice(0,240):'';
+  const name=typeof value?.name==='string'?value.name.trim().slice(0,120):'';
+  if(!id||!name)return null;
+  const gifPath=safeMediaPath(value.gif_url,'videos','gif'),imagePath=safeMediaPath(value.image,'images','jpg');
+  const rawSteps=Array.isArray(value.instruction_steps?.en)?value.instruction_steps.en:[];
+  const instructions=rawSteps.filter(step=>typeof step==='string'&&step.trim()).map(step=>step.trim().slice(0,300)).slice(0,8);
+  const primaryMuscles=[value.target,value.muscle_group,...(Array.isArray(value.secondary_muscles)?value.secondary_muscles:[])]
+    .filter(item=>typeof item==='string'&&item.trim()).map(item=>item.trim().slice(0,100)).filter((item,index,all)=>all.indexOf(item)===index).slice(0,8);
+  return {id,name,equipment:typeof value.equipment==='string'?value.equipment.trim().slice(0,80):'',category:typeof value.category==='string'?value.category.trim().slice(0,80):'',primaryMuscles,instructions,gifPath,imagePath,hasVideo:Boolean(gifPath)};
+}
+async function loadGithubCatalog(){
+  if(catalogMemory)return catalogMemory;
+  if(catalogLoadPromise)return catalogLoadPromise;
+  catalogLoadPromise=(async()=>{
+    const cached=await idb.get(CATALOG_CACHE_KEY),fresh=cached&&Array.isArray(cached.exercises)&&Date.now()-cached.savedAt<CATALOG_TTL;
+    if(fresh)return catalogMemory=cached.exercises;
+    try{
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+      let response;
+      try{response=await fetch(CATALOG_DATA_URL,{headers:{Accept:'application/json'},credentials:'omit',signal:controller.signal})}finally{clearTimeout(timeout)}
+      if(!response.ok)throw new Error(`GitHub returned ${response.status}`);
+      const payload=await response.json(),exercises=(Array.isArray(payload)?payload:[]).map(normalizeGithubExercise).filter(Boolean);
+      if(exercises.length<1000)throw new Error('The GitHub exercise dataset is incomplete');
+      await idb.set({savedAt:Date.now(),exercises},CATALOG_CACHE_KEY);return catalogMemory=exercises;
+    }catch(error){
+      if(Array.isArray(cached?.exercises)&&cached.exercises.length)return catalogMemory=cached.exercises;
+      throw new Error('GitHub exercise catalog is unavailable');
+    }
+  })();
+  try{return await catalogLoadPromise}finally{catalogLoadPromise=null}
+}
+const catalogRefFor=exercise=>({provider:CATALOG_PROVIDER,id:exercise.id,canonicalName:exercise.name,hasVideo:Boolean(exercise.hasVideo)});
+const isCurrentCatalogRef=ref=>ref?.provider===CATALOG_PROVIDER;
+const hasCatalogDemo=ref=>isCurrentCatalogRef(ref)&&Boolean(ref.hasVideo);
+async function catalogFetch(params){
+  const exercises=await loadGithubCatalog();
+  if(params.id){const exercise=exercises.find(item=>item.id===params.id);if(!exercise)throw new Error('Exercise not found in the GitHub catalog');return {exercise}}
+  const query=String(params.q||'').trim().toLowerCase(),terms=query.split(/\s+/).filter(Boolean),limit=Math.min(20,Math.max(1,Number.parseInt(params.limit,10)||10));
+  if(query.length<2)return {results:[]};
+  const results=exercises.filter(exercise=>{
+    const haystack=`${exercise.name} ${exercise.equipment} ${exercise.category} ${exercise.primaryMuscles.join(' ')}`.toLowerCase();
+    return terms.every(term=>haystack.includes(term));
+  }).sort((a,b)=>{
+    const an=a.name.toLowerCase(),bn=b.name.toLowerCase(),as=an===query?0:an.startsWith(query)?1:2,bs=bn===query?0:bn.startsWith(query)?1:2;
+    return as-bs||an.localeCompare(bn);
+  }).slice(0,limit);
+  return {results};
+}
+function catalogPickerCopy(){
+  if(catalogPicker.kind==='active-map'||catalogPicker.kind==='template-map')return 'Choose the movement this exercise should use for demonstrations.';
+  return 'Choose from 1,324 GitHub exercises. Every catalog exercise includes an animated demonstration.';
+}
+window.openCatalogPicker=(kind,templateId='',exerciseIndex=-1)=>{
+  catalogPicker={kind,templateId,exerciseIndex:Number(exerciseIndex),results:[],timer:null,requestId:catalogPicker.requestId+1,suggestions:true};
+  const adding=kind==='active-add'||kind==='template-add',linking=kind==='active-map'||kind==='template-map';
+  modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Exercise catalog</div><h2 style="font-size:22px">${adding?'Add exercise':'Link exercise'}</h2><div class="muted" style="margin-top:4px">${catalogPickerCopy()}</div></div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    ${linking?'<div class="catalog-note">An exact match may not be available. Choose the closest movement.</div>':''}
+    ${adding?`<label class="field-label">Working sets<input class="txt" id="catalogSets" type="number" min="1" max="20" value="2" inputmode="numeric"></label>`:''}
+    <div class="catalog-search"><input class="txt" id="catalogQuery" maxlength="200" autocomplete="off" placeholder="Search exercises…" oninput="catalogSearchChanged(this.value)"></div>
+    <div id="catalogResults" class="catalog-results">${catalogSkeletonMarkup()}</div>`);
+  renderCatalogSuggestions();setTimeout(()=>$('#catalogQuery')?.focus(),50);
+};
+const catalogSkeletonMarkup=(count=3)=>Array.from({length:count},()=>'<div class="catalog-skeleton"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm"></div></div>').join('');
+async function renderCatalogSuggestions(){
+  const root=$('#catalogResults');if(!root)return;root.innerHTML=catalogSkeletonMarkup();catalogPicker.suggestions=true;
+  const requestId=++catalogPicker.requestId;
+  try{
+    const exercises=await loadGithubCatalog();if(requestId!==catalogPicker.requestId||!$('#catalogResults'))return;
+    const ids=[...normalizeCatalogIdList(S.favoriteCatalogIds,100),...normalizeCatalogIdList(S.recentCatalogIds,12)],seen=new Set();
+    catalogPicker.results=ids.filter(id=>!seen.has(id)&&seen.add(id)).map(id=>exercises.find(exercise=>exercise.id===id)).filter(Boolean).slice(0,12);
+    if(!catalogPicker.results.length){root.innerHTML='<div class="catalog-empty">Search by exercise name. Favourites and recently used movements will appear here.</div>';return}
+    renderCatalogResults('Favourites & recent');
+  }catch(error){if(requestId===catalogPicker.requestId)root.innerHTML=`<div class="catalog-empty" style="color:var(--danger)">${esc(error.message)}. Your workout is still available.</div>`}
+}
+window.catalogSearchChanged=value=>{
+  clearTimeout(catalogPicker.timer);const query=String(value||'').trim(),root=$('#catalogResults');
+  if(!query){renderCatalogSuggestions();return}
+  if(query.length<2){catalogPicker.suggestions=false;root.innerHTML='<div class="catalog-empty">Type at least 2 characters to search.</div>';return}
+  catalogPicker.suggestions=false;root.innerHTML=catalogSkeletonMarkup();
+  const requestId=++catalogPicker.requestId;
+  catalogPicker.timer=setTimeout(async()=>{
+    try{
+      const data=await catalogFetch({q:query,limit:'12'});if(requestId!==catalogPicker.requestId)return;
+      catalogPicker.results=Array.isArray(data.results)?data.results:[];renderCatalogResults();
+    }catch(error){if(requestId===catalogPicker.requestId)root.innerHTML=`<div class="catalog-empty" style="color:var(--danger)">${esc(error.message)}. Your workout is still available.</div>`}
+  },350);
+};
+function renderCatalogResults(label=''){
+  const root=$('#catalogResults');if(!root)return;
+  if(!catalogPicker.results.length){root.innerHTML='<div class="catalog-empty">No matching exercises found. Try a broader name.</div>';return}
+  root.innerHTML=`${label?`<div class="catalog-suggestion-label">${esc(label)}</div>`:''}${catalogPicker.results.map((exercise,index)=>`<div class="catalog-result"><button class="catalog-result-main" onclick="chooseCatalogExercise(${index})"><span style="min-width:0"><span class="catalog-result-name">${esc(exercise.name)}</span><span class="catalog-result-meta">${esc([exercise.equipment,...(exercise.primaryMuscles||[]).slice(0,2)].filter(Boolean).join(' · ')||'Exercise')}</span></span><span class="catalog-video-state ${exercise.hasVideo?'':'missing'}">${exercise.hasVideo?'▶ GIF':'No demo'}</span></button><button class="catalog-favorite ${(S.favoriteCatalogIds||[]).includes(exercise.id)?'on':''}" onclick="toggleCatalogFavorite(${index})" aria-label="${(S.favoriteCatalogIds||[]).includes(exercise.id)?'Remove from':'Add to'} favourites">${(S.favoriteCatalogIds||[]).includes(exercise.id)?'★':'☆'}</button></div>`).join('')}`;
+}
+window.toggleCatalogFavorite=index=>{
+  const exercise=catalogPicker.results[index];if(!exercise)return;
+  const favorites=normalizeCatalogIdList(S.favoriteCatalogIds,100),position=favorites.indexOf(exercise.id);
+  if(position>=0){favorites.splice(position,1);toast('Removed from favourites')}else{favorites.unshift(exercise.id);toast('Added to favourites')}
+  S.favoriteCatalogIds=favorites;save();
+  if(catalogPicker.suggestions)renderCatalogSuggestions();else renderCatalogResults();
+};
+function rememberCatalogExercise(exercise){S.recentCatalogIds=[exercise.id,...normalizeCatalogIdList(S.recentCatalogIds,12).filter(id=>id!==exercise.id)].slice(0,12)}
+window.chooseCatalogExercise=index=>{
+  const exercise=catalogPicker.results[index];if(!exercise)return;
+  rememberCatalogExercise(exercise);
+  const ref=catalogRefFor(exercise),sets=templateSetCount($('#catalogSets')?.value||2);
+  if(catalogPicker.kind==='active-add'){
+    active.entries.push({exId:uid(),name:exercise.name,catalogRef:ref,sets:Array.from({length:sets},()=>({w:'',r:''}))});persistActive();closeModal();renderActive();toast('Exercise added');return;
+  }
+  if(catalogPicker.kind==='active-map'){
+    const entry=active?.entries[catalogPicker.exerciseIndex];if(!entry)return;entry.catalogRef=ref;persistActive();closeModal();renderActive();toast('Demo linked');return;
+  }
+  const template=S.templates.find(x=>x.id===catalogPicker.templateId);if(!template)return;
+  if(catalogPicker.kind==='template-add')template.exercises.push(seedEx(exercise.name,sets,ref));
+  else if(catalogPicker.kind==='template-map'&&template.exercises[catalogPicker.exerciseIndex])template.exercises[catalogPicker.exerciseIndex].catalogRef=ref;
+  save();editTpl(template.id);toast(catalogPicker.kind==='template-add'?'Exercise added':'Demo linked');
+};
+const activeDemoKey=(exercise,index)=>`${active?.id||'workout'}:${exercise?.exId||index}`;
+const isActiveDemoOpen=(exercise,index)=>expandedDemoKeys.has(activeDemoKey(exercise,index));
+function inlineDemoMarkup(exercise,index){
+  if(!isActiveDemoOpen(exercise,index))return '';
+  return `<div class="inline-demo"><div class="inline-demo-media" id="inlineDemoMedia${index}"><div class="inline-demo-loading"><span class="spin"></span> Loading demo…</div></div><div class="inline-demo-cues" id="inlineDemoCues${index}"><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line sm" style="margin-top:7px"></div></div><div class="inline-demo-actions"><button class="chip" onclick="toggleActiveDemo(${index})">− Minimize</button></div></div>`;
+}
+async function loadInlineDemo(index){
+  const exercise=active?.entries[index],root=$(`#inlineDemoMedia${index}`);if(!exercise||!root||!hasCatalogDemo(exercise.catalogRef))return;
+  const workoutId=active.id,key=activeDemoKey(exercise,index),catalogId=exercise.catalogRef.id;
+  try{
+    const data=await catalogFetch({id:catalogId});
+    if(active?.id!==workoutId||active?.entries[index]?.catalogRef?.id!==catalogId||!expandedDemoKeys.has(key))return;
+    const target=$(`#inlineDemoMedia${index}`),catalogExercise=data.exercise;if(!target||!catalogExercise?.gifPath)throw new Error('No demonstration is available');
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,mediaPath=reduced&&catalogExercise.imagePath?catalogExercise.imagePath:catalogExercise.gifPath;
+    target.innerHTML=`<img src="${esc(catalogMediaUrl(mediaPath))}" alt="${esc(catalogExercise.name)} ${reduced?'static preview':'animated demonstration'}" loading="eager" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=&quot;inline-demo-loading&quot;>Demo could not be loaded.</div>'">`;
+    const cues=$(`#inlineDemoCues${index}`),steps=(catalogExercise.instructions||[]).slice(0,4);
+    if(cues)cues.innerHTML=steps.length?`<b>Form cues</b><ol>${steps.map(step=>`<li>${esc(step)}</li>`).join('')}</ol>`:'<span>No written form cues are available for this movement.</span>';
+    if(reduced)target.insertAdjacentHTML('beforeend','<div class="catalog-empty" style="position:absolute;bottom:0;left:0;right:0;background:rgba(16,21,13,.88);padding:6px">Reduced motion · static preview</div>');
+  }catch(error){const target=$(`#inlineDemoMedia${index}`);if(target&&expandedDemoKeys.has(key))target.innerHTML=`<div class="inline-demo-loading" style="color:var(--danger)">${esc(error.message)}.</div>`}
+}
+window.toggleActiveDemo=index=>{
+  const exercise=active?.entries[index];if(!exercise||!hasCatalogDemo(exercise.catalogRef))return;
+  const key=activeDemoKey(exercise,index);if(expandedDemoKeys.has(key))expandedDemoKeys.delete(key);else expandedDemoKeys.add(key);
+  renderActive();
+};
+
 /* ---------- render: home ---------- */
 function renderHome(){
   $('#dateLine').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});
@@ -608,12 +834,33 @@ function renderTpls(){
 }
 
 /* ---------- render: history ---------- */
+let openHistorySwipeId='',historySwipeGesture=null,historySuppressClickUntil=0;
+const historyStats=sessions=>({workouts:sessions.length,volume:sessions.reduce((total,session)=>total+vol(session),0),duration:sessions.reduce((total,session)=>total+sessionDuration(session),0)});
+const compactDuration=ms=>{const minutes=Math.round(ms/60000);return minutes>=60?`${Math.floor(minutes/60)}h ${minutes%60}m`:`${minutes}m`};
+function historyPrCount(sessions,beforeTimestamp){
+  const best=new Map();
+  S.sessions.filter(session=>session.start<beforeTimestamp).forEach(session=>session.entries.forEach(exercise=>{const key=exercise.name.toLowerCase(),weight=Math.max(0,...exercise.sets.map(set=>Number(set.w)||0));best.set(key,Math.max(best.get(key)||0,weight))}));
+  let count=0;[...sessions].sort((a,b)=>a.start-b.start).forEach(session=>session.entries.forEach(exercise=>{const key=exercise.name.toLowerCase(),weight=Math.max(0,...exercise.sets.map(set=>Number(set.w)||0)),previous=best.get(key)||0;if(weight>previous&&weight>0)count++;best.set(key,Math.max(previous,weight))}));
+  return count;
+}
+function renderHistoryInsights(selected,filteredSessions){
+  let title='Last 7 days',sessions=filteredSessions,trend='';
+  if(!selected){
+    const now=Date.now(),start=now-7*86400000,previousStart=start-7*86400000;
+    sessions=S.sessions.filter(session=>session.start>=start&&session.start<=now);const previous=S.sessions.filter(session=>session.start>=previousStart&&session.start<start),currentStats=historyStats(sessions),previousStats=historyStats(previous);
+    trend=previousStats.volume?`${currentStats.volume>=previousStats.volume?'↑':'↓'} ${Math.abs(Math.round((currentStats.volume-previousStats.volume)/previousStats.volume*100))}% volume vs prior week`:currentStats.volume?'First active week':'No volume logged';
+    var beforeTimestamp=start;
+  }else{title='Selected day';var beforeTimestamp=filteredSessions.length?Math.min(...filteredSessions.map(session=>session.start)):Date.now()}
+  const stats=historyStats(sessions),prs=historyPrCount(sessions,beforeTimestamp);
+  $('#histInsights').innerHTML=`<div class="card hist-insights"><div class="hist-insight-head"><b>${title}</b>${trend?`<span class="hist-trend">${trend}</span>`:''}</div><div class="hist-insight-grid"><div class="hist-insight"><div class="hist-insight-value">${stats.workouts}</div><div class="hist-insight-label">Workouts</div></div><div class="hist-insight"><div class="hist-insight-value">${stats.volume.toLocaleString()}</div><div class="hist-insight-label">Volume · ${esc(S.units)}</div></div><div class="hist-insight"><div class="hist-insight-value">${compactDuration(stats.duration)}</div><div class="hist-insight-label">Training time</div></div><div class="hist-insight"><div class="hist-insight-value">${prs}</div><div class="hist-insight-label">Weight PRs</div></div></div></div>`;
+}
 function renderHist(){
   const input=$('#histDate'),selected=input.value;input.max=localDateKey(Date.now());
   if(selected){const [y,m,d]=selected.split('-').map(Number);$('#histDateLabel').textContent=new Date(y,m-1,d).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
   else $('#histDateLabel').textContent='All dates';
   $('#histClear').style.display=selected?'inline-flex':'none';
   const sessions=[...S.sessions].filter(s=>!selected||localDateKey(s.start)===selected).sort((a,b)=>b.start-a.start);
+  renderHistoryInsights(selected,sessions);
   if(!sessions.length){
     $('#histList').innerHTML=`<div class="card muted">${selected?'No workouts logged on this date.':'Finished workouts land here.'}</div>`;return;
   }
@@ -621,15 +868,22 @@ function renderHist(){
   $('#histList').innerHTML=sessions.map(s=>{
     const key=localDateKey(s.start),heading=key===previousDate?'':`<div class="hist-date">${new Date(s.start).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>`;
     previousDate=key;
-    return `${heading}<div class="card hist pressable" onclick="viewSession('${s.id}')">
+    return `${heading}<div class="hist-swipe ${openHistorySwipeId===s.id?'open':''}" id="histSwipe${s.id}"><div class="hist-swipe-actions"><button class="hist-swipe-action repeat" onclick="event.stopPropagation();repeatSession('${s.id}')">↻<span>Repeat</span></button><button class="hist-swipe-action edit" onclick="event.stopPropagation();editSession('${s.id}')">✎<span>Edit</span></button><button class="hist-swipe-action delete" onclick="event.stopPropagation();delSession('${s.id}')">×<span>Delete</span></button></div><div class="card hist pressable hist-swipe-card" onpointerdown="historySwipeStart(event,'${s.id}')" onpointerup="historySwipeEnd(event,'${s.id}')" onpointercancel="historySwipeCancel()" onclick="openHistorySession('${s.id}')">
       <div class="row"><b>${s.name}</b><span class="muted">${new Date(s.start).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>
       <div class="row" style="margin-top:6px"><span class="muted">${s.entries.length} exercises · ${fmtDur(sessionDuration(s))}</span><span class="vol">${vol(s).toLocaleString()} ${S.units}</span></div>
-    </div>`;
+    </div></div>`;
   }).join('');
 }
+window.historySwipeStart=(event,id)=>{if(event.pointerType==='mouse'&&event.button!==0)return;historySwipeGesture={id,x:event.clientX,y:event.clientY}};
+window.historySwipeEnd=(event,id)=>{if(!historySwipeGesture||historySwipeGesture.id!==id)return;const dx=event.clientX-historySwipeGesture.x,dy=event.clientY-historySwipeGesture.y;historySwipeGesture=null;if(Math.abs(dx)>35&&Math.abs(dx)>Math.abs(dy)){openHistorySwipeId=dx<0?id:'';historySuppressClickUntil=Date.now()+350;renderHist()}};
+window.historySwipeCancel=()=>{historySwipeGesture=null};
+window.openHistorySession=id=>{if(Date.now()<historySuppressClickUntil)return;openHistorySwipeId='';viewSession(id)};
 window.openHistoryDate=value=>{
   $('#histDate').value=typeof value==='string'?value:localDateKey(value);
   renderHist();goScreen('s-hist');$('#s-hist').scrollTop=0;
+};
+window.openHistoryAll=()=>{
+  $('#histDate').value='';renderHist();goScreen('s-hist');$('#s-hist').scrollTop=0;
 };
 
 function renderAll(){renderHome();renderTpls();renderHist();renderFriends();renderProfileSettings()}
@@ -637,15 +891,16 @@ function renderAll(){renderHome();renderTpls();renderHist();renderFriends();rend
 /* ---------- active workout ---------- */
 function startWorkout(tplId,prefill){
   const t=S.templates.find(x=>x.id===tplId);
+  expandedDemoKeys.clear();
   active={id:uid(),templateId:tplId,name:prefill?prefill.name:t.name,start:Date.now(),units:S.units,pausedMs:0,pausedAt:null,
-    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,sets:Array.from({length:templateSetCount(e.sets)},()=>({w:'',r:''}))})))
+    entries:(prefill?prefill.entries:t.exercises.map(e=>({exId:e.id,name:e.name,...(e.catalogRef?{catalogRef:{...e.catalogRef}}:{}),sets:Array.from({length:templateSetCount(e.sets)},()=>({w:'',r:''}))})))
       .map(e=>({...e,sets:e.sets.map(s=>({...s}))}))};
   $('#wkName').textContent=active.name;
   persistActive();openSheet();renderActive();startTimer();
 }
 function duplicateLast(){
   const last=[...S.sessions].sort((a,b)=>b.start-a.start)[0];if(!last)return;
-  startWorkout(last.templateId,{name:last.name,entries:last.entries.map(e=>({exId:e.exId,name:e.name,sets:e.sets.map(s=>({w:s.w,r:s.r}))}))});
+  startWorkout(last.templateId,{name:last.name,entries:last.entries.map(e=>({exId:e.exId,name:e.name,...(e.catalogRef?{catalogRef:{...e.catalogRef}}:{}),sets:e.sets.map(s=>({w:s.w,r:s.r}))}))});
   toast('Loaded last workout');
 }
 function openSheet(){const sh=$('#sheet');sh.style.display='flex';requestAnimationFrame(()=>sh.classList.add('open'))}
@@ -659,9 +914,12 @@ function startTimer(){clearInterval(tick);updateTimer();tick=setInterval(updateT
 
 function renderActive(){
   $('#sheetBody').innerHTML=active.entries.map((e,ei)=>{
-    const last=lastFor(e.name,active.id),best=bestFor(e.name);
+    const last=lastFor(e.name,active.id),best=bestFor(e.name),demoOpen=isActiveDemoOpen(e,ei);
     return `<div class="card ex">
-      <div class="row"><div style="min-width:0"><button type="button" class="ex-name-edit" onclick="editActiveExercise(${ei})" aria-label="Edit ${esc(e.name)} exercise name"><span class="ex-name-text">${esc(e.name)}</span><span class="ex-name-pencil" aria-hidden="true">✎</span></button>
+      <div class="row"><div style="min-width:0;flex:1"><button type="button" class="ex-name-edit" onclick="editActiveExercise(${ei})" aria-label="Edit ${esc(e.name)} exercise name"><span class="ex-name-text">${esc(e.name)}</span><span class="ex-name-pencil" aria-hidden="true">✎</span></button>
+        ${e.catalogRef?`<div class="catalog-line"><div class="catalog-badge">${esc(e.catalogRef.canonicalName)}</div>${demoOpen&&hasCatalogDemo(e.catalogRef)?`<button class="catalog-edit-chip" onclick="openCatalogPicker('active-map','',${ei})" aria-label="Change ${esc(e.name)} GIF">✎ Edit GIF</button>`:''}</div>`:''}
+        ${hasCatalogDemo(e.catalogRef)?`<button class="chip demo-chip" style="margin-top:7px" onclick="toggleActiveDemo(${ei})" aria-expanded="${demoOpen}" aria-label="${demoOpen?'Minimize':'Show'} ${esc(e.name)} demonstration">${demoOpen?'− Minimize':'▶ Demo'}</button>`:`<button class="chip demo-chip" style="margin-top:7px" onclick="openCatalogPicker('active-map','',${ei})">${e.catalogRef?'Relink demo':'Link demo'}</button>`}
+        ${inlineDemoMarkup(e,ei)}
         ${best?`<div class="best">Previous best: <b>${best.weight} ${S.units} × ${best.reps} reps</b> · ${best.sets} set${best.sets===1?'':'s'} at top weight</div>`:'<div class="best muted">Previous best: no logged sets yet</div>'}
         ${last?`<div class="last">Last workout: ${last}</div>`:''}</div>
         <button class="chip" onclick="removeEx(${ei})">✕</button></div>
@@ -674,40 +932,36 @@ function renderActive(){
       </div>`).join('')}
       <button class="addset pressable" onclick="addSet(${ei})">+ Add set</button>
     </div>`}).join('');
+  active.entries.forEach((exercise,index)=>{if(isActiveDemoOpen(exercise,index))loadInlineDemo(index)});
 }
 window.upSet=(ei,si,k,v)=>{active.entries[ei].sets[si][k]=v;persistActive()};
 window.addSet=ei=>{const prev=active.entries[ei].sets.at(-1);active.entries[ei].sets.push({w:prev?prev.w:'',r:prev?prev.r:''});persistActive();renderActive()};
 window.delSet=(ei,si)=>{active.entries[ei].sets.splice(si,1);persistActive();renderActive()};
-window.removeEx=ei=>{active.entries.splice(ei,1);persistActive();renderActive()};
+window.removeEx=ei=>{const exercise=active.entries[ei];if(exercise)expandedDemoKeys.delete(activeDemoKey(exercise,ei));active.entries.splice(ei,1);persistActive();renderActive()};
 window.editActiveExercise=ei=>{
   const exercise=active?.entries[ei];if(!exercise)return;
   modal(`<h2 style="font-size:20px">Edit exercise name</h2><div class="muted" style="margin-top:4px">Changes this workout only</div>
     <input class="txt" id="activeExerciseName" maxlength="80" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveActiveExercise(${ei})}">
-    <button class="btn" style="margin-top:14px" onclick="saveActiveExercise(${ei})">Save exercise name</button>`);
+    ${isCurrentCatalogRef(exercise.catalogRef)?`<div class="card" style="margin:12px 0 0"><b>Catalog match</b><div class="muted" style="margin-top:3px">${esc(exercise.catalogRef.canonicalName)}${exercise.catalogRef.hasVideo?' · GIF available':' · No demo yet'}</div></div>`:exercise.catalogRef?`<div class="muted" style="margin-top:12px">This exercise uses the previous catalog and needs to be relinked.</div>`:'<div class="muted" style="margin-top:12px">This legacy exercise is not linked to the catalog yet.</div>'}
+    <button class="btn ghost" style="margin-top:12px" onclick="openCatalogPicker('active-map','',${ei})">${exercise.catalogRef?'Change catalog match':'Find catalog match'}</button>
+    <button class="btn" style="margin-top:10px" onclick="saveActiveExercise(${ei})">Save exercise name</button>`);
   const input=$('#activeExerciseName');input.value=exercise.name;input.focus();input.select();
 };
 window.saveActiveExercise=ei=>{const exercise=active?.entries[ei],name=$('#activeExerciseName')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');exercise.name=name;persistActive();closeModal();renderActive();toast('Exercise renamed')};
 
-$('#addExBtn').onclick=()=>{
-  modal(`<h2 style="font-size:20px">Add exercise</h2>
-    <input class="txt" id="newExName" placeholder="Exercise name" autofocus>
-    <button class="btn" style="margin-top:14px" onclick="addExGo()">Add</button>`);
-};
-window.addExGo=()=>{const n=$('#newExName').value.trim();if(!n)return;
-  active.entries.push({exId:uid(),name:n,sets:[{w:'',r:''},{w:'',r:''}]});
-  persistActive();closeModal();renderActive();};
+$('#addExBtn').onclick=()=>openCatalogPicker('active-add');
 
 $('#pauseWk').onclick=()=>{
   if(active.pausedAt){active.pausedMs=(active.pausedMs||0)+(Date.now()-active.pausedAt);active.pausedAt=null;toast('Workout resumed')}
   else{active.pausedAt=Date.now();toast('Workout paused')}
   persistActive();updateTimer();
 };
-$('#cancelWk').onclick=()=>{if(confirm('Discard this workout?')){active=null;S.activeWorkout=null;save();closeSheet()}};
+$('#cancelWk').onclick=()=>{if(confirm('Discard this workout?')){expandedDemoKeys.clear();active=null;S.activeWorkout=null;save();closeSheet()}};
 $('#finishWk').onclick=()=>{
   const entries=active.entries.map(e=>({...e,sets:e.sets.filter(s=>s.w||s.r)})).filter(e=>e.sets.length);
   if(!entries.length){toast('Log at least one set');return}
   active.end=Date.now();active.durationMs=activeElapsed();active.pausedAt=null;active.units=active.units||S.units;active.entries=entries;
-  S.sessions.push(active);S.activeWorkout=null;const s=active;active=null;save();closeSheet();renderAll();dailyBrief();showSummary(s);
+  S.sessions.push(active);S.activeWorkout=null;const s=active;expandedDemoKeys.clear();active=null;save();closeSheet();renderAll();dailyBrief();showSummary(s);
 };
 
 /* ---------- summary + export ---------- */
@@ -735,9 +989,12 @@ window.viewSession=id=>{
     <button class="chip" onclick="delSession('${s.id}')">Delete</button></div>
     <div class="muted">${new Date(s.start).toLocaleString()} · ${fmtDur(sessionDuration(s))}</div>
     <textarea readonly id="sumTxt">${exportText(s)}</textarea>
-    <button class="btn" onclick="copySum()">Copy summary</button>`);
+    <button class="btn" onclick="copySum()">Copy summary</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px"><button class="btn ghost sm" onclick="repeatSession('${s.id}')">Repeat workout</button><button class="btn ghost sm" onclick="editSession('${s.id}')">Edit details</button></div>`);
 };
-window.delSession=id=>{if(!confirm('Delete this workout?'))return;S.sessions=S.sessions.filter(x=>x.id!==id);S.homeRecap=null;save();closeModal();renderAll();dailyBrief()};
+window.repeatSession=id=>{const session=S.sessions.find(item=>item.id===id);if(!session)return;if(active)return toast('Finish the active workout first');openHistorySwipeId='';closeModal();startWorkout(session.templateId,{name:session.name,entries:session.entries.map(exercise=>({exId:exercise.exId,name:exercise.name,...(exercise.catalogRef?{catalogRef:{...exercise.catalogRef}}:{}),sets:exercise.sets.map(set=>({w:set.w,r:set.r}))}))});toast('Workout loaded')};
+window.editSession=id=>{const session=S.sessions.find(item=>item.id===id);if(!session)return;openHistorySwipeId='';modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Workout history</div><h2 style="font-size:21px">Edit workout</h2></div><button class="modal-close" onclick="closeModal()">✕</button></div><label class="field-label">Workout name<input class="txt" id="historyEditName" maxlength="80"></label><label class="field-label" style="margin-top:12px">Workout date<input class="txt" id="historyEditDate" type="date" max="${localDateKey(Date.now())}"></label><button class="btn" style="margin-top:14px" onclick="saveSessionEdit('${id}')">Save changes</button>`);$('#historyEditName').value=session.name;$('#historyEditDate').value=localDateKey(session.start);$('#historyEditName').focus()};
+window.saveSessionEdit=id=>{const session=S.sessions.find(item=>item.id===id),name=$('#historyEditName')?.value.trim(),date=$('#historyEditDate')?.value;if(!session||!name||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date||''))return toast('Enter a workout name and date');const [year,month,day]=date.split('-').map(Number),original=new Date(session.start),nextStart=new Date(year,month-1,day,original.getHours(),original.getMinutes(),original.getSeconds(),original.getMilliseconds()).getTime();if(!Number.isFinite(nextStart)||nextStart>Date.now()+86400000)return toast('Choose a valid workout date');const delta=nextStart-session.start;session.name=name;session.start=nextStart;if(session.end)session.end+=delta;S.homeRecap=null;save();closeModal();renderAll();dailyBrief();toast('Workout updated')};
+window.delSession=id=>{if(!confirm('Delete this workout?'))return;openHistorySwipeId='';S.sessions=S.sessions.filter(x=>x.id!==id);S.homeRecap=null;save();closeModal();renderAll();dailyBrief()};
 
 /* ---------- template editing ---------- */
 window.editTpl=id=>{
@@ -747,15 +1004,11 @@ window.editTpl=id=>{
     <input class="txt" id="tplName">
     <div id="tplExs" style="margin-top:12px">${t.exercises.map((e,i)=>`
       <div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">· ${templateSetCount(e.sets)} set${templateSetCount(e.sets)===1?'':'s'}</span></div>
+        <div class="tpl-ex-name">${esc(e.name)} <span class="muted">· ${templateSetCount(e.sets)} set${templateSetCount(e.sets)===1?'':'s'}${isCurrentCatalogRef(e.catalogRef)?` · ${e.catalogRef.hasVideo?'demo':'catalog'}`:e.catalogRef?' · relink':' · legacy'}</span></div>
         <div class="tpl-ex-actions"><button class="chip" onclick="editTplExercise('${t.id}',${i})" aria-label="Edit ${esc(e.name)}">✎</button><button class="chip" onclick="mvEx('${t.id}',${i},-1)">↑</button>
         <button class="chip" onclick="mvEx('${t.id}',${i},1)">↓</button>
         <button class="chip" onclick="rmTplEx('${t.id}',${i})">✕</button></div></div>`).join('')}</div>
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:9px;margin-top:12px">
-      <input class="txt" id="tplNewEx" placeholder="Add exercise…">
-      <input class="txt" id="tplNewSets" type="number" min="1" max="20" step="1" inputmode="numeric" value="2" aria-label="Number of sets">
-    </div>
-    <button class="btn ghost sm" style="margin-top:10px" onclick="addTplEx('${t.id}')">+ Add</button>
+    <button class="btn ghost" style="margin-top:12px" onclick="openCatalogPicker('template-add','${t.id}')">+ Add from catalog</button>
     <button class="btn" style="margin-top:14px" onclick="saveTpl('${t.id}')">Save</button>`);
   $('#tplName').value=t.name;
 };
@@ -768,11 +1021,11 @@ window.editTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=
     <input class="txt" id="tplExerciseName" maxlength="80" autocomplete="off" enterkeyhint="next">
     <label class="muted" for="tplExerciseSets" style="display:block;margin-top:12px">Working sets</label>
     <input class="txt" id="tplExerciseSets" type="number" min="1" max="20" step="1" inputmode="numeric" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();saveTplExercise('${id}',${i})}">
-    <button class="btn" style="margin-top:14px" onclick="saveTplExercise('${id}',${i})">Save exercise</button>`);
+    ${isCurrentCatalogRef(exercise.catalogRef)?`<div class="card" style="margin:12px 0 0"><b>Catalog match</b><div class="muted" style="margin-top:3px">${esc(exercise.catalogRef.canonicalName)}${exercise.catalogRef.hasVideo?' · GIF available':' · No demo yet'}</div></div>`:exercise.catalogRef?`<div class="muted" style="margin-top:12px">This exercise uses the previous catalog and needs to be relinked.</div>`:'<div class="muted" style="margin-top:12px">This legacy exercise is not linked to the catalog yet.</div>'}
+    <button class="btn ghost" style="margin-top:12px" onclick="openCatalogPicker('template-map','${id}',${i})">${exercise.catalogRef?'Change catalog match':'Find catalog match'}</button>
+    <button class="btn" style="margin-top:10px" onclick="saveTplExercise('${id}',${i})">Save exercise</button>`);
   const nameInput=$('#tplExerciseName');nameInput.value=exercise.name;$('#tplExerciseSets').value=templateSetCount(exercise.sets);nameInput.focus();nameInput.select()};
 window.saveTplExercise=(id,i)=>{const t=S.templates.find(x=>x.id===id),exercise=t?.exercises[i],name=$('#tplExerciseName')?.value.trim(),setsInput=$('#tplExerciseSets')?.value.trim();if(!exercise)return closeModal();if(!name)return toast('Enter an exercise name');if(!/^\d+$/.test(setsInput||'')||+setsInput<1||+setsInput>20)return toast('Sets must be between 1 and 20');exercise.name=name;exercise.sets=templateSetCount(setsInput);delete exercise.reps;save();editTpl(id);toast('Template exercise updated')};
-window.addTplEx=id=>{const t=S.templates.find(x=>x.id===id),name=$('#tplNewEx').value.trim(),setsInput=$('#tplNewSets').value.trim();if(!name)return toast('Enter an exercise name');if(!/^\d+$/.test(setsInput)||+setsInput<1||+setsInput>20)return toast('Sets must be between 1 and 20');
-  t.exercises.push(seedEx(name,setsInput));save();editTpl(id)};
 window.saveTpl=id=>{const t=S.templates.find(x=>x.id===id);t.name=$('#tplName').value.trim()||t.name;save();closeModal();renderAll()};
 window.delTpl=id=>{if(!confirm('Delete this template?'))return;S.templates=S.templates.filter(x=>x.id!==id);save();closeModal();renderAll()};
 $('#newTplBtn').onclick=()=>{
@@ -831,6 +1084,7 @@ $('#aiTplBtn').onclick=()=>{
     <button class="btn" style="margin-top:14px" id="aiTplGo" onclick="aiTemplate()">Generate</button>
     <div id="aiOut" class="muted" style="margin-top:12px"></div>`);
 };
+let pendingAiTemplates=[];
 window.aiTemplate=async()=>{
   const p=$('#aiTplPrompt').value.trim();if(!p)return;
   const b=$('#aiTplGo');b.innerHTML='<span class="spin"></span> Generating…';
@@ -838,10 +1092,31 @@ window.aiTemplate=async()=>{
     const txt=await askAI(p,'Build workout templates that match the user request. Choose an appropriate, independent number of working sets for every exercise based on the goal, exercise type, and requested workload; do not force the same set count across all exercises. Return only the requested structured JSON.','template_builder');
     const parsed=JSON.parse(txt.replace(/```json|```/g,'').trim()),arr=Array.isArray(parsed)?parsed:parsed.templates;
     if(!Array.isArray(arr)||!arr.length)throw new Error('AI returned no templates');
-    const generated=arr.map(t=>({id:uid(),name:String(t.name||'AI workout').slice(0,80),icon:'✨',exercises:(Array.isArray(t.exercises)?t.exercises:[]).map(ex=>typeof ex==='string'?seedEx(ex,2):seedEx(String(ex?.name||'Exercise').slice(0,80),ex?.sets)).filter(ex=>ex.name.trim()).slice(0,20)})).filter(t=>t.exercises.length);
-    if(!generated.length)throw new Error('AI returned no valid exercises');
-    S.templates.push(...generated);save();closeModal();renderAll();toast(`Added ${generated.length} template${generated.length>1?'s':''}`);
-  }catch(e){$('#aiOut').textContent=aiErrorMessage(e);b.textContent='Generate'}
+    const drafts=arr.slice(0,6).map(t=>({name:String(t.name||'AI workout').slice(0,80),exercises:(Array.isArray(t.exercises)?t.exercises:[]).map(ex=>({suggestedName:String(typeof ex==='string'?ex:ex?.name||'').trim().slice(0,120),sets:templateSetCount(typeof ex==='string'?2:ex?.sets)})).filter(ex=>ex.suggestedName).slice(0,12)})).filter(t=>t.exercises.length);
+    if(!drafts.length)throw new Error('AI returned no valid exercises');
+    b.innerHTML='<span class="spin"></span> Matching catalog…';
+    const unique=[...new Set(drafts.flatMap(t=>t.exercises.map(ex=>ex.suggestedName.toLowerCase())))],matches=new Map();
+    for(let i=0;i<unique.length;i+=4){
+      const batch=unique.slice(i,i+4);await Promise.all(batch.map(async query=>{const data=await catalogFetch({q:query,limit:'5'});matches.set(query,Array.isArray(data.results)?data.results:[])}));
+    }
+    pendingAiTemplates=drafts.map(t=>({...t,exercises:t.exercises.map(ex=>({...ex,candidates:matches.get(ex.suggestedName.toLowerCase())||[]}))}));
+    renderAiMatchReview();
+  }catch(e){const out=$('#aiOut');if(out)out.textContent=aiErrorMessage(e);if(b?.isConnected)b.textContent='Generate'}
+};
+function renderAiMatchReview(){
+  let missing=0;
+  const groups=pendingAiTemplates.map((template,ti)=>`<div class="card"><b>${esc(template.name)}</b>${template.exercises.map((exercise,ei)=>{
+    const candidates=exercise.candidates||[];if(!candidates.length)missing++;
+    return `<div class="ai-match"><div class="ai-match-name">AI suggested: ${esc(exercise.suggestedName)} · ${exercise.sets} sets</div><select class="txt" id="aiMatch${ti}_${ei}" ${candidates.length?'':'disabled'}>${candidates.length?candidates.map(candidate=>`<option value="${esc(candidate.id)}">${esc(candidate.name)}${candidate.hasVideo?' · demo':''}</option>`).join(''):'<option>No catalog match found</option>'}</select></div>`;
+  }).join('')}</div>`).join('');
+  modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Review required</div><h2 style="font-size:22px">Confirm catalog matches</h2><div class="muted" style="margin-top:4px">Review every AI suggestion before these templates are saved.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div>${groups}${missing?`<div class="muted" style="color:var(--danger);margin:4px 0 12px">${missing} exercise${missing===1?' has':'s have'} no match. Nothing will be saved until every exercise is matched.</div>`:''}<button class="btn" onclick="saveAiTemplateMatches()" ${missing?'disabled style="opacity:.45"':''}>Confirm and add templates</button>`);
+}
+window.saveAiTemplateMatches=()=>{
+  const generated=pendingAiTemplates.map((template,ti)=>({id:uid(),name:template.name,icon:'✨',exercises:template.exercises.map((exercise,ei)=>{
+    const id=$(`#aiMatch${ti}_${ei}`)?.value,candidate=exercise.candidates.find(x=>x.id===id);return candidate?seedEx(candidate.name,exercise.sets,catalogRefFor(candidate)):null;
+  }).filter(Boolean)}));
+  if(generated.some((template,ti)=>template.exercises.length!==pendingAiTemplates[ti].exercises.length))return toast('Choose a catalog match for every exercise');
+  S.templates.push(...generated);pendingAiTemplates=[];save();closeModal();renderAll();toast(`Added ${generated.length} template${generated.length===1?'':'s'}`);
 };
 
 /* ---------- private sync + friends ---------- */
@@ -858,14 +1133,17 @@ const overviewFor=s=>({
 });
 
 function mergeCloudState(remote){
-  if(!remote||remote.ver!==S.ver)return;
+  if(!remote||![2,3].includes(Number(remote.ver)))return;
+  remote=migrateState(remote);
   const localActive=S.activeWorkout;
-  if(!S.sessions.length&&!localActive){S=normalizeTemplateSets({...remote,ver:2});return}
+  if(!S.sessions.length&&!localActive){S=migrateState({...remote,ver:3});return}
   const sessions=new Map((remote.sessions||[]).map(x=>[x.id,x]));
   (S.sessions||[]).forEach(x=>sessions.set(x.id,x));
   const templates=new Map((remote.templates||[]).map(x=>[x.id,x]));
   (S.templates||[]).forEach(x=>templates.set(x.id,x));
-  S=normalizeTemplateSets({...remote,...S,ver:2,sessions:[...sessions.values()],templates:[...templates.values()],activeWorkout:localActive||remote.activeWorkout||null});
+  const favoriteCatalogIds=normalizeCatalogIdList([...(S.favoriteCatalogIds||[]),...(remote.favoriteCatalogIds||[])],100);
+  const recentCatalogIds=normalizeCatalogIdList([...(S.recentCatalogIds||[]),...(remote.recentCatalogIds||[])],12);
+  S=migrateState({...remote,...S,ver:3,sessions:[...sessions.values()],templates:[...templates.values()],favoriteCatalogIds,recentCatalogIds,activeWorkout:localActive||remote.activeWorkout||null});
 }
 
 function scheduleCloudSync(){
@@ -980,7 +1258,13 @@ function setupGoogleIdentity(clientId){
   document.head.appendChild(script);
 }
 
+async function initLocalDemo(){
+  const user={id:'local-demo-user',email:'demo@local.test',user_metadata:{full_name:'Demo Lifter',name:'Demo Lifter'}};
+  document.body.classList.add('demo-mode');cloud.configured=false;cloud.error='';cloud.user=user;cloud.profile={id:user.id,display_name:'Demo Lifter',friend_code:'LOCAL'};
+  appUserId=user.id;await load(user);appLoaded=true;unlockApp();
+}
 async function initCloud(){
+  if(localDemoMode)return initLocalDemo();
   try{
     const r=await fetch('/api/config',{cache:'no-store'}),cfg=await r.json();
     if(!cfg.supabaseUrl||!cfg.supabaseKey)throw new Error('RepNet authentication is not configured yet');
@@ -1093,7 +1377,8 @@ async function refreshSocial(){
 
 function renderCloudStatus(){
   let text='Synced and backed up';
-  if(!cloud.configured)text='Not configured';
+  if(localDemoMode)text='Local demo · sync off';
+  else if(!cloud.configured)text='Not configured';
   else if(!cloud.user)text='Sign in required';
   else if(cloud.syncing)text='Syncing…';
   else if(cloud.error)text='Sync needs attention';
@@ -1102,7 +1387,8 @@ function renderCloudStatus(){
 
 function renderFriends(){
   const root=$('#friendsContent');if(!root)return;renderCloudStatus();
-  $('#friendsRefresh').style.display=cloud.user?'inline-flex':'none';
+  $('#friendsRefresh').style.display=cloud.user&&cloud.configured?'inline-flex':'none';
+  if(localDemoMode){root.innerHTML='<div class="card ai"><div class="eyebrow" style="color:var(--lime)">Local demo</div><h2 style="font-size:20px">Friends and cloud sync are off</h2><div class="muted" style="margin-top:6px">Workout templates, logging, history, GitHub catalog matching and GIF demonstrations remain available for local testing.</div></div>';return}
   if(!cloud.configured){root.innerHTML=`<div class="card"><h2 style="font-size:19px">Cloud setup needed</h2><div class="muted" style="margin-top:6px">Your workouts are still saved on this device. Add <b>SUPABASE_URL</b> and <b>SUPABASE_PUBLISHABLE_KEY</b> in Vercel after running the included database schema.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}</div>`;return}
   if(!cloud.user){root.innerHTML=`<div class="card"><h2 style="font-size:20px">Sync & friends</h2><div class="muted" style="margin-top:6px">Sign in with a secure email link to back up your workouts and connect with friends.</div>${cloud.error?`<div class="muted" style="color:var(--danger);margin-top:10px">${esc(cloud.error)}</div>`:''}<input class="txt" id="syncEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"><button class="btn" id="syncSignIn" style="margin-top:12px" onclick="cloudSignIn()">Email me a sign-in link</button></div><div class="card ai"><b>Privacy first</b><div class="muted" style="margin-top:5px">Everyone sees aggregate leaderboard totals. Accepted friends can also see workout and exercise names — never individual weights or reps.</div></div>`;return}
   if(!cloud.profile){root.innerHTML=`<div class="card muted">Connecting your profile…${cloud.error?`<div style="color:var(--danger);margin-top:8px">${esc(cloud.error)}</div>`:''}</div>`;return}
@@ -1202,29 +1488,29 @@ window.downloadBackup=()=>{
   a.href=url;a.download=`repnet-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 window.openBackupSettings=()=>modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Your data</div><h2 style="font-size:23px">Backup settings</h2><div class="muted" style="margin-top:4px">Keep a portable copy of workouts and custom templates.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="settings-action"><div><b>Download backup</b><div class="muted">Export all data as a JSON file</div></div><button class="chip on" onclick="downloadBackup()">Download</button></div><div class="settings-action"><div><b>Restore backup</b><div class="muted">Import a RepNet JSON backup</div></div><button class="chip" onclick="document.querySelector('#restoreFile').click()">Choose file</button></div>`);
-window.openCloudSettings=()=>{modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Private sync</div><h2 style="font-size:23px">Cloud settings</h2><div class="muted" style="margin-top:4px">Signed in as ${esc(cloud.user?.email||'')}</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="card" style="margin-bottom:12px"><div class="row"><div><b>Sync status</b><div class="muted" id="cloudStatusModal" style="margin-top:3px">Checking…</div></div><span class="status-dot ${cloud.error?'':'on'}"></span></div>${cloud.profile?.friend_code?`<div class="muted" style="margin-top:12px">Friend code</div><div class="friend-code">${esc(cloud.profile.friend_code)}</div>`:''}</div><button class="btn ghost" onclick="closeModal();goScreen('s-friends')">Open friends & leaderboard</button><button class="btn ghost" style="margin-top:10px;color:var(--danger)" onclick="cloudSignOut()">Sign out</button>`);renderCloudStatus()};
+window.openCloudSettings=()=>{if(localDemoMode)return modal('<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Local demo</div><h2 style="font-size:23px">Cloud sync is off</h2><div class="muted" style="margin-top:4px">Demo data stays only in this browser and uses a separate local storage key.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div>');modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">Private sync</div><h2 style="font-size:23px">Cloud settings</h2><div class="muted" style="margin-top:4px">Signed in as ${esc(cloud.user?.email||'')}</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="card" style="margin-bottom:12px"><div class="row"><div><b>Sync status</b><div class="muted" id="cloudStatusModal" style="margin-top:3px">Checking…</div></div><span class="status-dot ${cloud.error?'':'on'}"></span></div>${cloud.profile?.friend_code?`<div class="muted" style="margin-top:12px">Friend code</div><div class="friend-code">${esc(cloud.profile.friend_code)}</div>`:''}</div><button class="btn ghost" onclick="closeModal();goScreen('s-friends')">Open friends & leaderboard</button><button class="btn ghost" style="margin-top:10px;color:var(--danger)" onclick="cloudSignOut()">Sign out</button>`);renderCloudStatus()};
 window.openAISettings=()=>{modal(`<div class="modal-head"><div><div class="eyebrow" style="color:var(--lime)">RepNet coach</div><h2 style="font-size:23px">AI features</h2><div class="muted" style="margin-top:4px">Workout recaps, suggestions, templates and chat.</div></div><button class="modal-close" onclick="closeModal()">✕</button></div><div class="card"><div class="row"><div><b>Connection</b><div class="muted" id="aiStatus" style="margin-top:3px">${esc(aiConnection.text)}</div></div><button class="chip" id="aiCheckBtn" onclick="checkAIStatus()">Check</button></div><div class="muted" style="margin-top:12px">Your OpenAI key stays in the server-side /api/ai endpoint on Vercel.</div></div>`);paintAIStatus()};
 $('#histDate').onchange=renderHist;
 $('#histClear').onclick=()=>{$('#histDate').value='';renderHist()};
 $('#dateLine').onclick=()=>openHistoryDate(Date.now());
 $('#restoreFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{S=JSON.parse(r.result);save();renderAll();dailyBrief();closeModal(true);toast('Data restored')}catch(_){toast('Invalid backup file')}finally{e.target.value=''}};
+  r.onload=()=>{try{const restored=JSON.parse(r.result);if(![2,3].includes(Number(restored?.ver)))throw new Error('Unsupported backup');S=migrateState(restored);save();renderAll();dailyBrief();closeModal(true);toast('Data restored')}catch(_){toast('Invalid backup file')}finally{e.target.value=''}};
   r.readAsText(f);
 };
 
 /* ---------- modal + nav ---------- */
 let modalLocked=false;
 function modal(html,locked=false){modalLocked=locked;$('#modalCard').innerHTML=html;$('#modal').classList.add('open')}
-window.closeModal=force=>{if(modalLocked&&!force)return;modalLocked=false;$('#modal').classList.remove('open')};
+window.closeModal=force=>{if(modalLocked&&!force)return;clearTimeout(catalogPicker.timer);catalogPicker.requestId++;modalLocked=false;$('#modal').classList.remove('open')};
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
 window.goScreen=id=>{
   const b=document.querySelector(`#nav button[data-s="${id}"]`);if(!b)return;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
-  $('#'+id).classList.add('on');if(id==='s-friends'&&cloud.user)refreshSocial();
+  $('#'+id).classList.add('on');if(id==='s-friends'&&cloud.user&&cloud.configured)refreshSocial();
 };
-document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>goScreen(b.dataset.s));
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>b.dataset.s==='s-hist'?openHistoryAll():goScreen(b.dataset.s));
 $('#dupBtn').onclick=duplicateLast;
 $('#dailyCard').onclick=openChat;
 $('#chatClose').onclick=closeChat;

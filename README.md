@@ -2,7 +2,7 @@
 
 ## 1. Deploy to Vercel (free)
 1. Put this folder in a GitHub repo (or drag-and-drop at vercel.com/new)
-2. Import the repo in Vercel → Deploy. No build settings needed (static + one serverless function).
+2. Import the repo in Vercel → Deploy. No build settings needed (static + serverless functions).
 
 ## 2. Enable AI features
 Vercel → your project → Settings → Environment Variables:
@@ -12,7 +12,15 @@ Vercel → your project → Settings → Environment Variables:
 
 Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. The ✨ buttons (AI recap, AI template builder, daily briefing, and coach chat) will then work.
 
-## 3. Enable authentication, cloud sync and friends (Supabase free tier)
+## 3. Enable the exercise catalog
+No API key or server configuration is required. RepNet loads the public
+[hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) catalog from GitHub and searches its 1,324 exercises on the device.
+
+Exercise metadata is cached in IndexedDB for up to 24 hours, with stale metadata used when GitHub is temporarily unavailable. Animated GIF files stream from the repository only when a user opens a demonstration; RepNet does not cache those files. Cloud state and backups contain only the provider name, exercise ID, canonical name, and availability flag — never a GIF URL or the full catalog.
+
+The dataset's code, structured data, and instructions are MIT-licensed. Its media has separate terms described in the repository's [`NOTICE.md`](https://github.com/hasaneyldrm/exercises-dataset/blob/main/NOTICE.md); the source and media terms remain documented here for project review.
+
+## 4. Enable authentication, cloud sync and friends (Supabase free tier)
 1. Create a Supabase project.
 2. Open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql), and run it once.
 3. In Supabase **Authentication → URL Configuration**, set:
@@ -31,9 +39,12 @@ The Google Client Secret belongs only in Supabase. No OAuth secret, database pas
 
 The publishable key is intentionally delivered to the browser; the SQL file enables Row Level Security so it can only access authorized rows. Never add a Supabase service-role or secret key to the app.
 
-## 4. Install on iPhone or Android
+## 5. Install on iPhone or Android
 Open your Vercel URL in Safari on iPhone or Chrome on Android, then choose **Add to Home Screen**.
 It launches full-screen like a native app.
+
+## Local review without authentication
+Serve the project on `localhost`, then open `http://localhost:3000/?demo=1` (adjust the port for your server). Demo mode uses separate local IndexedDB data and disables authentication and cloud sync. It uses the same GitHub exercise catalog as the signed-in app, so a basic static server is enough. The authentication bypass is rejected automatically on non-loopback hostnames.
 
 ## Notes
 - Login is required. Google is the primary sign-in method and secure email links are the fallback.

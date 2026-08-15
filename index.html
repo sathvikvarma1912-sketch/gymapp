@@ -498,26 +498,43 @@ const normalizeCatalogRef=value=>['exerciseapi',CATALOG_PROVIDER].includes(value
 const seedEx=(name,sets=2,catalogRef=null)=>({id:uid(),name,sets:templateSetCount(sets),...(normalizeCatalogRef(catalogRef)?{catalogRef:normalizeCatalogRef(catalogRef)}:{})});
 const normalizeTemplateSets=state=>{(state.templates||[]).forEach(t=>(t.exercises||[]).forEach(e=>{e.sets=templateSetCount(e.sets);delete e.reps;const ref=normalizeCatalogRef(e.catalogRef);if(ref)e.catalogRef=ref;else delete e.catalogRef}));return state};
 const migrateState=state=>{
-  if(!state||![2,3].includes(Number(state.ver)))return initialState();
-  state.ver=3;state.templates=Array.isArray(state.templates)?state.templates:[];state.sessions=Array.isArray(state.sessions)?state.sessions:[];
+  if(!state||![2,3,4].includes(Number(state.ver)))return initialState();
+  const replaceLegacyTemplates=Number(state.ver)<4;
+  state.ver=4;state.templates=replaceLegacyTemplates?defaultTemplates():(Array.isArray(state.templates)?state.templates:[]);state.sessions=Array.isArray(state.sessions)?state.sessions:[];
+  if(replaceLegacyTemplates)state.activeWorkout=null;
   state.favoriteCatalogIds=normalizeCatalogIdList(state.favoriteCatalogIds,100);state.recentCatalogIds=normalizeCatalogIdList(state.recentCatalogIds,12);
   normalizeTemplateSets(state);
   [...state.sessions,state.activeWorkout].filter(Boolean).forEach(session=>(session.entries||[]).forEach(e=>{const ref=normalizeCatalogRef(e.catalogRef);if(ref)e.catalogRef=ref;else delete e.catalogRef}));
   return state;
 };
-const mk=a=>a.map(x=>seedEx(x[0],x[1]));
+const catalogSeedRef=(id,canonicalName)=>({provider:CATALOG_PROVIDER,id,canonicalName,hasVideo:true});
+const mk=(templateKey,items)=>items.map((x,index)=>({
+  ...seedEx(x[0],x[1],catalogSeedRef(x[2],x[3])),
+  id:`default-${templateKey}-${String(index+1).padStart(2,'0')}`
+}));
+const defaultTemplates=()=>[
+  {id:'default-upper',name:'Upper',icon:'💪',exercises:mk('upper',[
+    ['Incline smith',2,'0757','smith incline bench press'],['Pec dec fly',2,'0596','lever seated fly'],['Lat pulldown',2,'0198','cable pulldown'],['Lat row',1,'0861','cable seated row'],['Upper back row',1,'1324','cable upper row'],['Lateral raise',2,'0334','dumbbell lateral raise'],['Pushdown',2,'0201','cable pushdown'],['Hammer curl',1,'0313','dumbbell hammer curl'],['Preacher curl',1,'0070','barbell preacher curl'],['Reverse pec dec',1,'0602','lever seated reverse fly']
+  ])},
+  {id:'default-lower',name:'Lower',icon:'🦵',exercises:mk('lower',[
+    ['Squat movement',2,'0043','barbell full squat'],['Extension',1,'0585','lever leg extension'],['Abduction',1,'0597','lever seated hip abduction'],['Hamstring Curls',2,'0586','lever lying leg curl'],['Rdl',2,'0085','barbell romanian deadlift'],['Cable crunch',2,'0175','cable kneeling crunch'],['Leg raises',2,'0620','lying leg raise flat bench'],['Seated calves',2,'0594','lever seated calf raise']
+  ])},
+  {id:'default-push',name:'Push',icon:'🔥',exercises:mk('push',[
+    ['Incline db press',2,'0314','dumbbell incline bench press'],['Cable flys',1,'0227','cable standing fly'],['Weighted dips',2,'1767','weighted triceps dip on high parallel bars'],['Shoulder db press',2,'0405','dumbbell seated shoulder press'],['Lateral raises',2,'0334','dumbbell lateral raise'],['Tricep cuffs pushdowns',2,'0201','cable pushdown'],['Single arm extension',2,'0231','cable standing one arm triceps extension']
+  ])},
+  {id:'default-pull',name:'Pull',icon:'🧲',exercises:mk('pull',[
+    ['Weighted pullups',2,'0841','weighted pull-up'],['Chest supported rows',2,'0327','dumbbell incline row'],['Lat focused rows',2,'0861','cable seated row'],['Shrugs',2,'0406','dumbbell shrug'],['Hyperextension',1,'0489','hyperextension'],['Incline db curl',1,'0315','dumbbell incline biceps curl'],['Hammer curls',1,'0313','dumbbell hammer curl'],['Preacher curl',1,'0070','barbell preacher curl']
+  ])},
+  {id:'default-legs',name:'Legs',icon:'🦍',exercises:mk('legs',[
+    ['Smith machine squat',2,'3281','smith full squat'],['RDL',2,'0085','barbell romanian deadlift'],['Leg press',2,'0739','sled 45° leg press'],['Hamstring Curls',2,'0586','lever lying leg curl'],['Adduction',2,'0598','lever seated hip adduction'],['Abduction',2,'0597','lever seated hip abduction'],['Decline ab crunch',2,'0277','decline crunch'],['Leg raises',2,'0620','lying leg raise flat bench'],['Standing calves',2,'0605','lever standing calf raise']
+  ])}
+];
 const initialState=()=>({
-  ver:3,
+  ver:4,
   units:'lbs',
   favoriteCatalogIds:[],
   recentCatalogIds:[],
-  templates:[
-    {id:uid(),name:'Upper',icon:'💪',exercises:mk([['Incline smith',2],['Pec dec fly',2],['Lat pulldown',2],['Lat row',1],['Upper back row',1],['Lateral raise',2],['Pushdown',2],['Hammer curl',1],['Preacher curl',1],['Reverse pec dec',1]])},
-    {id:uid(),name:'Lower',icon:'🦵',exercises:mk([['Squat movement',2],['Extension',1],['Abduction',1],['Hamstring Curls',2],['Rdl',2],['Cable crunch',2],['Leg raises',2],['Seated calves',2]])},
-    {id:uid(),name:'Push',icon:'🔥',exercises:mk([['Incline db press',2],['Cable flys',1],['Weighted dips',2],['Shoulder db press',2],['Lateral raises',2],['Tricep cuffs pushdowns',2],['Single arm extension',2]])},
-    {id:uid(),name:'Pull',icon:'🧲',exercises:mk([['Weighted pullups',2],['Chest supported rows',2],['Lat focused rows',2],['Shrugs',2],['Hyperextension',1],['Incline db curl',1],['Hammer curls',1],['Preacher curl',1]])},
-    {id:uid(),name:'Legs',icon:'🦍',exercises:mk([['Smith machine squat',2],['RDL',2],['Leg press',2],['Hamstring Curls',2],['Adduction',2],['Abduction',2],['Decline ab crunch',2],['Leg raises',2],['Standing calves',2]])}
-  ],
+  templates:defaultTemplates(),
   sessions:[]
 });
 let S=initialState();
@@ -534,11 +551,11 @@ async function load(user){
   let v=await idb.get(storageKey);
   if(!v){
     const [legacy,legacyOwner]=await Promise.all([idb.get('state'),idb.get('legacy-owner')]);
-    if([2,3].includes(Number(legacy?.ver))&&(!legacyOwner||legacyOwner===user.id)){
+    if([2,3,4].includes(Number(legacy?.ver))&&(!legacyOwner||legacyOwner===user.id)){
       v=legacy;if(!legacyOwner)await idb.set(user.id,'legacy-owner');
     }
   }
-  S=migrateState([2,3].includes(Number(v?.ver))?v:initialState());
+  S=migrateState([2,3,4].includes(Number(v?.ver))?v:initialState());
   if(!S.name){S.name=user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split('@')[0]||''}
   await idb.set(S,storageKey);
   active=S.activeWorkout||null;renderAll();
@@ -1169,17 +1186,17 @@ const overviewFor=s=>({
 });
 
 function mergeCloudState(remote){
-  if(!remote||![2,3].includes(Number(remote.ver)))return;
+  if(!remote||![2,3,4].includes(Number(remote.ver)))return;
   remote=migrateState(remote);
   const localActive=S.activeWorkout;
-  if(!S.sessions.length&&!localActive){S=migrateState({...remote,ver:3});return}
+  if(!S.sessions.length&&!localActive){S=migrateState({...remote,ver:4});return}
   const sessions=new Map((remote.sessions||[]).map(x=>[x.id,x]));
   (S.sessions||[]).forEach(x=>sessions.set(x.id,x));
   const templates=new Map((remote.templates||[]).map(x=>[x.id,x]));
   (S.templates||[]).forEach(x=>templates.set(x.id,x));
   const favoriteCatalogIds=normalizeCatalogIdList([...(S.favoriteCatalogIds||[]),...(remote.favoriteCatalogIds||[])],100);
   const recentCatalogIds=normalizeCatalogIdList([...(S.recentCatalogIds||[]),...(remote.recentCatalogIds||[])],12);
-  S=migrateState({...remote,...S,ver:3,sessions:[...sessions.values()],templates:[...templates.values()],favoriteCatalogIds,recentCatalogIds,activeWorkout:localActive||remote.activeWorkout||null});
+  S=migrateState({...remote,...S,ver:4,sessions:[...sessions.values()],templates:[...templates.values()],favoriteCatalogIds,recentCatalogIds,activeWorkout:localActive||remote.activeWorkout||null});
 }
 
 function scheduleCloudSync(){
@@ -1531,7 +1548,7 @@ $('#histClear').onclick=()=>{$('#histDate').value='';renderHist()};
 $('#dateLine').onclick=()=>openHistoryDate(Date.now());
 $('#restoreFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const restored=JSON.parse(r.result);if(![2,3].includes(Number(restored?.ver)))throw new Error('Unsupported backup');S=migrateState(restored);save();renderAll();dailyBrief();closeModal(true);toast('Data restored')}catch(_){toast('Invalid backup file')}finally{e.target.value=''}};
+  r.onload=()=>{try{const restored=JSON.parse(r.result);if(![2,3,4].includes(Number(restored?.ver)))throw new Error('Unsupported backup');S=migrateState(restored);active=S.activeWorkout||null;save();renderAll();dailyBrief();closeModal(true);toast('Data restored')}catch(_){toast('Invalid backup file')}finally{e.target.value=''}};
   r.readAsText(f);
 };
 

@@ -10,7 +10,7 @@ Vercel → your project → Settings → Environment Variables:
 - Optional: `OPENAI_MODEL` = a Responses API model ID (defaults to `gpt-5.6-luna`)
 - Optional: `OPENAI_MAX_OUTPUT_TOKENS` = longer or shorter replies (defaults to `1600`, capped at `4000`)
 
-Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. The ✨ buttons (AI recap, AI template builder, daily briefing, and coach chat) will then work.
+Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. AI recap, template building, daily briefing, coach chat, and active-workout exercise replacement will then work.
 
 ## 3. Enable the exercise catalog
 No API key or server configuration is required. RepNet loads the public
@@ -19,6 +19,8 @@ No API key or server configuration is required. RepNet loads the public
 Exercise metadata is cached in IndexedDB for up to 24 hours, with stale metadata used when GitHub is temporarily unavailable. Animated GIF files stream from the repository only when a user opens a demonstration; RepNet does not cache those files. Cloud state and backups contain only the provider name, exercise ID, canonical name, and availability flag — never a GIF URL or the full catalog.
 
 If an exercise is not in the catalog, users can add it by name as a custom exercise in an active workout or template. Custom exercises work without a GIF and can be linked to the closest catalog demonstration later. The AI template builder receives the complete catalog name list, is instructed to prefer exact catalog names, offers nearby matches for review, and keeps unmatched suggestions as custom exercises instead of blocking the template. The stable catalog instruction prefix is eligible for OpenAI prompt caching.
+
+During an active workout, **Ask AI** lets the user request a substitution in natural language. The agent evaluates the complete current exercise lineup, order, set volume, completed sets, equipment, and muscle coverage before suggesting a non-redundant alternative. The server returns only structured replacement proposals, the browser rejects exercises that are not exact catalog matches, and the workout changes only after the user taps **Apply replacement**. Existing set rows are preserved; if they already contain values, RepNet asks for an additional confirmation.
 
 The dataset's code, structured data, and instructions are MIT-licensed. Its media has separate terms described in the repository's [`NOTICE.md`](https://github.com/hasaneyldrm/exercises-dataset/blob/main/NOTICE.md); the source and media terms remain documented here for project review.
 

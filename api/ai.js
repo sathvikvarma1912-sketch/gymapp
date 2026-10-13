@@ -114,10 +114,10 @@ export default async function handler(req, res) {
           additionalProperties: false,
         },
       },
-    } : mode === 'workout_agent' ? {
+    } : ['workout_agent', 'workout_replacements'].includes(mode) ? {
       format: {
         type: 'json_schema',
-        name: 'active_workout_actions',
+        name: mode === 'workout_replacements' ? 'active_workout_replacements' : 'active_workout_actions',
         strict: true,
         schema: {
           type: 'object',
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
             message: { type: 'string' },
             actions: {
               type: 'array',
-              maxItems: 4,
+              ...(mode === 'workout_replacements' ? { minItems: 3, maxItems: 3 } : { maxItems: 3 }),
               items: {
                 type: 'object',
                 properties: {
@@ -159,7 +159,7 @@ export default async function handler(req, res) {
         reasoning: { effort: 'none' },
         max_output_tokens: maxOutputTokens,
         ...(mode === 'template_builder' ? { prompt_cache_key: 'repnet-template-catalog-v1' } : {}),
-        ...(mode === 'workout_agent' ? { prompt_cache_key: 'repnet-workout-agent-catalog-v1' } : {}),
+        ...(['workout_agent', 'workout_replacements'].includes(mode) ? { prompt_cache_key: 'repnet-workout-agent-catalog-v1' } : {}),
         ...(structuredText ? { text: structuredText } : {}),
       }),
     });

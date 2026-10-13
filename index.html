@@ -553,7 +553,7 @@ const initialState=()=>({
 });
 let S=initialState();
 let active=null,tick=null;
-const cloud={client:null,user:null,profile:null,details:null,detailsLoaded:false,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:'',googleClientId:'',googleReady:false};
+const cloud={client:null,user:null,profile:null,details:null,detailsLoaded:false,configured:false,syncing:false,dirty:false,timer:null,lastUserId:null,error:'',redirectUrl:'',googleClientId:'',googleReady:false,googleNonce:''};
 let social={friendships:[],profiles:new Map(),overviews:[],leaderboards:{week:[],month:[],year:[],all:[]}};
 let leaderMode='volume',leaderRange='all';
 let friendSearch={term:'',results:[],busy:false,error:'',timer:null};
@@ -1402,31 +1402,38 @@ async function activateCloudUser(user){
 const isStandaloneApp=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
 async function acceptGoogleCredential(response){
   if(!response?.credential)return showAuthMessage('Google did not return a sign-in credential. Please try again.');
-  const slot=$('#authGoogleNative');slot.style.pointerEvents='none';showAuthMessage('Signing you inâ€¦','success');
+  const slot=$('#authGoogleNative'),nonce=cloud.googleNonce;slot.style.pointerEvents='none';showAuthMessage('Signing you in…','success');
   try{
-    const {data,error}=await cloud.client.auth.signInWithIdToken({provider:'google',token:response.credential});
+    if(!nonce)throw new Error('Google sign-in security check expired. Please try again.');
+    const {data,error}=await cloud.client.auth.signInWithIdToken({provider:'google',token:response.credential,nonce});
     if(error)throw error;
     if(data?.session?.user)await activateCloudUser(data.session.user);
-  }catch(e){showAuthMessage(e.message||'Google sign-in could not be completed');slot.style.pointerEvents='auto'}
+  }catch(e){showAuthMessage(e.message||'Google sign-in could not be completed');slot.style.pointerEvents='auto';cloud.googleNonce='';renderGoogleIdentityButton()}
 }
-function renderGoogleIdentityButton(){
+async function googleNoncePair(){
+  const bytes=crypto.getRandomValues(new Uint8Array(32)),nonce=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(nonce));
+  return {nonce,hashedNonce:Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('')};
+}
+async function renderGoogleIdentityButton(){
   const slot=$('#authGoogleNative'),fallback=$('#authGoogle');
   if(!slot||!window.google?.accounts?.id||!cloud.googleClientId)return false;
   try{
-    google.accounts.id.initialize({client_id:cloud.googleClientId,callback:acceptGoogleCredential,cancel_on_tap_outside:false});
+    const {nonce,hashedNonce}=await googleNoncePair();cloud.googleNonce=nonce;
+    google.accounts.id.initialize({client_id:cloud.googleClientId,callback:acceptGoogleCredential,cancel_on_tap_outside:false,nonce:hashedNonce,use_fedcm_for_prompt:true});
     slot.innerHTML='';slot.style.display='block';
     google.accounts.id.renderButton(slot,{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',logo_alignment:'left',width:Math.max(240,Math.min(400,Math.floor(slot.clientWidth||340)))});
     fallback.style.display='none';cloud.googleReady=true;return true;
-  }catch(_){slot.style.display='none';fallback.style.display='flex';return false}
+  }catch(_){cloud.googleNonce='';cloud.googleReady=false;slot.style.display='none';fallback.style.display='flex';return false}
 }
-function setupGoogleIdentity(clientId){
+async function setupGoogleIdentity(clientId){
   cloud.googleClientId=clientId||'';
   if(!cloud.googleClientId)return;
-  if(renderGoogleIdentityButton())return;
+  if(await renderGoogleIdentityButton())return;
   let script=$('#googleIdentityScript');
   if(script)return;
   script=document.createElement('script');script.id='googleIdentityScript';script.src='https://accounts.google.com/gsi/client';script.async=true;script.defer=true;
-  script.onload=renderGoogleIdentityButton;
+  script.onload=()=>renderGoogleIdentityButton();
   script.onerror=()=>{if(isStandaloneApp())showAuthMessage('Google sign-in could not load. Check your connection, then reopen RepNet.')};
   document.head.appendChild(script);
 }
@@ -1448,7 +1455,7 @@ async function initCloud(){
     // This is a client-only PWA using Supabase's default magic-link template.
     // Implicit flow lets the browser receive the session directly from that link.
     cloud.client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'implicit'}});
-    setupGoogleIdentity(cfg.googleClientId);
+    await setupGoogleIdentity(cfg.googleClientId);
     const {data:{session},error:sessionError}=await cloud.client.auth.getSession();if(sessionError)throw sessionError;
     const authParams=new URLSearchParams(location.search);
     const authHash=new URLSearchParams(location.hash.replace(/^#/,''));
@@ -1477,7 +1484,7 @@ window.cloudSignIn=async()=>{
 window.cloudGoogleSignIn=async()=>{
   if(!cloud.client)return showAuthMessage('Authentication is still connecting. Try again in a moment.');
   if(isStandaloneApp()){
-    setupGoogleIdentity(cloud.googleClientId);
+    await setupGoogleIdentity(cloud.googleClientId);
     return showAuthMessage(cloud.googleReady?'Use the Google sign-in button above.':'Google sign-in is loading. Try again in a moment.',cloud.googleReady?'success':'error');
   }
   const button=$('#authGoogle');button.disabled=true;showAuthMessage('');

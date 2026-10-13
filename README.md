@@ -6,9 +6,9 @@
 
 ## 2. Enable AI features
 Vercel → your project → Settings → Environment Variables:
-- `OPENAI_API_KEY` = your OpenAI key
-- Optional: `OPENAI_MODEL` = a Responses API model ID (defaults to `gpt-5.6-luna`)
-- Optional: `OPENAI_MAX_OUTPUT_TOKENS` = longer or shorter replies (defaults to `1600`, capped at `4000`)
+- `GEMINI_API_KEY` = your Gemini API key
+- Optional: `GEMINI_MODEL` = a Gemini model ID (defaults to `gemini-2.5-flash`)
+- Optional: `GEMINI_MAX_OUTPUT_TOKENS` = longer or shorter replies (defaults to `1600`, capped at `4000`)
 
 Apply the variable to **Production**, then redeploy. In the app, open Profile → AI features → Check; it should say **Connected and ready**. AI recap, template building, daily briefing, coach chat, and active-workout exercise replacement will then work.
 
@@ -18,7 +18,7 @@ No API key or server configuration is required. RepNet loads the public
 
 Exercise metadata is cached in IndexedDB for up to 24 hours, with stale metadata used when GitHub is temporarily unavailable. Animated GIF files stream from the repository only when a user opens a demonstration; RepNet does not cache those files. Cloud state and backups contain only the provider name, exercise ID, canonical name, and availability flag — never a GIF URL or the full catalog.
 
-If an exercise is not in the catalog, users can add it by name as a custom exercise in an active workout or template. Custom exercises work without a GIF and can be linked to the closest catalog demonstration later. The AI template builder receives the complete catalog name list, is instructed to prefer exact catalog names, offers nearby matches for review, and keeps unmatched suggestions as custom exercises instead of blocking the template. The stable catalog instruction prefix is eligible for OpenAI prompt caching.
+If an exercise is not in the catalog, users can add it by name as a custom exercise in an active workout or template. Custom exercises work without a GIF and can be linked to the closest catalog demonstration later. The AI template builder receives the complete catalog name list, is instructed to prefer exact catalog names, offers nearby matches for review, and keeps unmatched suggestions as custom exercises instead of blocking the template.
 
 During an active workout, every exercise has a **Replace** button and **Ask AI** also accepts substitution requests in natural language. The agent evaluates the complete current exercise lineup, order, set volume, completed sets, equipment, and muscle coverage before returning three non-redundant alternatives. Each option includes its catalog GIF, name, reason, and an **Apply replacement** control. The server returns only structured replacement proposals, the browser rejects options that are not exact GIF-backed catalog matches, and the workout changes only after approval. Existing set rows are preserved; if they already contain values, RepNet asks for an additional confirmation.
 
